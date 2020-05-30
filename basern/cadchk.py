@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+# coding: utf-8
+
+import json
+import tempfile
+import os
+import sys
+import rnutils
+
+from pathlib import Path
+
+####################################################################
+# Show the diffs among the CAD (Cookie-Auto-Delete addon) expressions
+#   -> easy way to confirm if there are differences
+#
+####################################################################
+
+def make_expr_file(inpfn, pfx = "tmp"):
+  #print("Processing " + inpfn + ", pfx=" + pfx)
+  if not os.path.isfile(inpfn):
+    raise Exception('no such file: ' + inpfn)
+
+  exps = []
+  with open(inpfn, "r") as rf:
+    data = json.load(rf)
+    for d in data['default']:
+      exp = d['expression']
+      exps.append(exp)
+
+  # Generate a temporary file-object that will deleteOnExit 
+  # returning name or closing the temp-file unlinks in filesystem
+  tmpff = tempfile.NamedTemporaryFile(prefix = pfx, suffix = ".cdchk", delete = False)
+  #print("Found " + str(len(exps)) + " items in " + inpfn)
+  ss = os.linesep.join(exps) + os.linesep
+  tmpff.write(ss.encode())
+  tmpff.flush()
+  #print("    wrote into [" + tmpff.name + "]")
+  return tmpff
+
+boxFN = str(os.environ['BOXDIR']) + os.sep + "CAD_Expressions.json"
+
+##########
+## 
+
+if __name__ == '__main__':
+  if len(sys.argv) < 2:
+    print("Requires a file to compare boxdir version against.")
+    sys.exit(2)
+
+  ff = make_expr_file(sys.argv[1])
+  bff = make_expr_file(boxFN, pfx = "box-")
+
+  #os.system('ls -ltrd ' + ff + " " + bff)
+
+  # -U is context around a diff, 0 is very minimal
+  try:
+    rnutils.do_run("git diff --no-index -w -U1 " + ff.name + " " + bff.name, None)
+
+    print(f"Removing {ff.name} and {bff.name}")
+    os.remove(ff.name)
+    os.remove(bff.name)
+  except:
+    pass
