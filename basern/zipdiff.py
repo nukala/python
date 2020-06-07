@@ -73,6 +73,12 @@ def show_diffs(lfname, rfname):
   return num_diffs
 
 
+############
+# Compare contents of two zip files, look at CRC, date_time stamps and show 
+#  diffs in a more readable fashion
+#
+
+
 if __name__ == "__main__":
   if len(sys.argv) != 3:
     print(f"Compares differences inside TWO zip files.")

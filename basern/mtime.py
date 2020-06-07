@@ -48,6 +48,10 @@ def get_mod_fstamp(path):
 
     return mt.strftime('%y%b%d').lower()
 
+
+##################
+# modify time of parameter
+
 if __name__ == "__main__" :
     print(f"args={sys.argv}.{len(sys.argv)}")
     fn = sys.argv[1]

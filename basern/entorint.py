@@ -18,11 +18,18 @@ def ent_int(prompt):
     return 1
 
 
+#############
+# Some shell scripts usually ask - "To continue hit enter, else Control-C to interrupt" kind of messages.
+#
+# With the new bash upgrade, SIGINT kills the bash shell. I have not found a easy way to suppress that. 
+# This is an attempt using python
+#
+
 if __name__ == "__main__" :
   if len(sys.argv) > 1:
     prompt = sys.argv[1]
   else:
     prompt = "Enter or ^C "
 
-  ent_int(prompt)
-  sys.exit(0)
+  stat = ent_int(prompt)
+  sys.exit(stat)

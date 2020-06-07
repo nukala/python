@@ -31,6 +31,9 @@ def bool_yesno(prompt):
 
 
 
+############
+# Ask for an answer. Again, like in entorint.py, interrupt on a read kills the invoking shell
+
 if __name__ == "__main__" :
   prompt = None
   if len(sys.argv) > 1:

@@ -44,6 +44,10 @@ def make_targets(targets, logf, special_env = None):
   return ans
 
 
+##########
+# To capture logs into a {TARGET}.log format
+# Force verbosity too
+
 def main():
   start = time.time()
   tgt = None
