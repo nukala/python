@@ -24,7 +24,8 @@ def do_git_pull(logf):
   Performs git pull
   If successful, asks and cleans up the logfile
   """
-  stat = do_run(['git', 'pull', '--no-commit'], logf, show_result = False)
+  #https://blog.sffc.xyz/post/185195398930/why-you-should-use-git-pull-ff-only
+  stat = do_run(['git', 'pull', '--no-commit', '--ff-only'], logf, show_result = False)
   tee_log(logf, f"{prog} = {stat.returncode}, elapsed={round(time.time()-start, 2)} seconds")
   #logf.close()
 
