@@ -93,7 +93,7 @@ def tee_log(logf, msg):
 
 def log_started_message(logf, prog = ""):
   tee_log(logf, f"""###
-# {prog} ran at {datetime.datetime.now().strftime('%I:%M.%S %p on %d %b %Y')}
+# {prog} started at {datetime.datetime.now().strftime('%I:%M.%S %p on %d %b %Y')}
 ### """)
 
 
@@ -109,7 +109,7 @@ def elapsed_seconds(start):
 ################
 # run/exec helpers
 ################
-def getoutput_from_run(cmd, logf, show_cmd = False, show_result = True, show_output = False):
+def getoutput_from_run(cmd, logf, show_cmd = False, show_result = True, show_output = False, show_error = False):
   start = time.time()
   out = None
   err = None
@@ -142,6 +142,11 @@ def getoutput_from_run(cmd, logf, show_cmd = False, show_result = True, show_out
       tee_log(logf, f"===== [{cmdStr}]={returncode} ===== ")
       tee_log(logf, out)
       tee_log(logf, f"----- [{cmdStr}]={returncode} ----- ")
+    if show_error == True:
+      tee_log(logf, f"===== ERR [{cmdStr}]={returncode} ===== ")
+      tee_log(logf, err)
+      tee_log(logf, f"----- err [{cmdStr}]={returncode} ----- ")
+
   except (FileNotFoundError, PermissionError) as e:
     returncode = 1
     excpt = e
@@ -153,6 +158,10 @@ def getoutput_from_run(cmd, logf, show_cmd = False, show_result = True, show_out
 # For long running commands = https://www.endpoint.com/blog/2015/01/28/getting-realtime-output-using-python
 ###
 def do_run(cmd, logf, inpt = None, special_env = None, show_cmd = False, show_result = True):
+  """
+  Runs the specified cmd or list 
+  grabs all the output (may encounter bufffing challenges) into memory
+  """
   if show_cmd == True:
     tee_log(logf, cmd)
   env = None
