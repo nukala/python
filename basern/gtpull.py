@@ -29,7 +29,7 @@ def git_gc_prune(logf, num_days = 21):
   """
   stat = do_run(['git', 'gc', '--no-quiet', f'--prune={num_days}.days.ago'], logf,
                 show_cmd = True, show_result = True)
-  tee_log(logf, '\n')
+  #tee_log(logf, '\n')
 
   return stat.returncode
 
@@ -40,7 +40,7 @@ def git_prune_remote_origin(logf):
   Performs - git remote prune origin
   """
   stat = do_run(['git', 'remote', 'prune', 'origin'], logf, show_cmd = True, show_result = True)
-  tee_log(logf, '\n')
+  #tee_log(logf, '\n')
 
   return stat.returncode
 
@@ -50,7 +50,7 @@ def git_fetch_prune(logf):
   Performs git fetch prune verbose --prune-tags removed
   """
   stat = do_run(['git', 'fetch', '--prune', '--verbose'], logf, show_cmd = True, show_result = True)
-  tee_log(logf, '\n')
+  #tee_log(logf, '\n')
 
   return stat.returncode
 
@@ -82,22 +82,22 @@ def do_git_pull(logf):
 def after_tasks(logf, idxTs, objTs):
   oldest = min(idxTs, objTs)
   wkago = datetime.datetime.now() - datetime.timedelta(days=7)
+  result = 1
   if (oldest < wkago.timestamp()) :
     tee_log(logf, f"\noldest={datetime.datetime.fromtimestamp(oldest)} && wkago={wkago}")
     stat = ask_then_run(['time', 'gtclean'], logf, show_result = True)
-  else:
-    tee_log(logf, f"oldest={datetime.datetime.fromtimestamp(oldest)} is NEWER-THAN wkago={wkago}")
 
-  write_log(logf, 'gtclean and others')
-  result = 1
-  if bool_yesno(f'\nShallow cleanup (y/n) [n]? '):
-    result = git_gc_prune(logf, num_days = 7)
-    result = git_prune_remote_origin(logf)
-    result = git_fetch_prune(logf)
+    write_log(logf, 'gtclean and others')
+    if bool_yesno(f'\nShallow cleanup (y/n) [n]? '):
+      result = git_gc_prune(logf, num_days = 7)
+      result = git_prune_remote_origin(logf)
+      result = git_fetch_prune(logf)
     
     if bool_yesno('deep clean (y/n) [n]? '):
       stat = do_run(['time', 'gtclean'], None, show_result = True)
       result = stat.returncode
+  else:
+    tee_log(logf, f"oldest={datetime.datetime.fromtimestamp(oldest)} is NEWER-THAN wkago={wkago}")
 
   return result
 
@@ -121,8 +121,8 @@ def main():
   last_changes = show_gitlast_changes(root, logf)
   tee_log(logf, last_changes)
 
-  idxTs = mtime.modification_timestamp('.git/index')
-  objTs = mtime.modification_timestamp('.git/objects')
+  idxTs = mtime.modification_timestamp(git_path(root, 'index'))
+  objTs = mtime.modification_timestamp(git_path(root, 'objects'))
 
   ret = do_git_pull(logf)
   if ret == 0:
