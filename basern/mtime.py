@@ -6,17 +6,23 @@ import platform
 import datetime
 import subprocess
 
-def creation_date(path_to_file):
+def creation_date(path):
+  """
+  Return timestamp in a readable fashion
+  """
+  return datetime.datetime.fromtimestamp(creation_timestamp(path))
+
+def creation_timestamp(path):
     """
-    Try to get the date that a file was created, falling back to when it was
+    Get the timestamp that a file was created, falling back to when it was
     last modified if that isn't possible.
     See http://stackoverflow.com/a/39501288/1709587 for explanation.
     """
     ct = None
     if platform.system() == 'Windows':
-        ct = os.path.getctime(path_to_file)
+        ct = os.path.getctime(path)
     else:
-        stat = os.stat(path_to_file)
+        stat = os.stat(path)
 	#print(str(stat))
         try:
             ct = stat.st_birthtime
@@ -24,18 +30,25 @@ def creation_date(path_to_file):
             # We're probably on Linux. No easy way to get creation dates here,
             # so we'll settle for when its content was last modified.
             ct = stat.st_mtime
-    return datetime.datetime.fromtimestamp(ct)
+    return ct
    
 
-def modify_date(path):
-    mt = None
-    if platform.system() == 'Windows':
-        mt = os.path.getmtime(path)
-    else:
-        stat = os.stat(path)
-	#print(str(stat))
-        mt = stat.st_mtime
-    return datetime.datetime.fromtimestamp(mt)
+def modification_date(path):
+  """
+  Return modifcation date in a readable fashion
+  """
+  return datetime.datetime.fromtimestamp(modification_timestamp(path))
+
+
+def modification_timestamp(path):
+  mt = None
+  if platform.system() == 'Windows':
+    mt = os.path.getmtime(path)
+  else:
+    stat = os.stat(path)
+    #print(str(stat))
+    mt = stat.st_mtime
+  return mt
 
 def get_mod_fstamp(path):
     """
@@ -44,7 +57,7 @@ def get_mod_fstamp(path):
     """
     mt = datetime.datetime.today()
     if is_exists(path):
-        mt = modify_date(path)
+        mt = modification_date(path)
 
     return mt.strftime('%y%b%d').lower()
 
@@ -65,4 +78,5 @@ if __name__ == "__main__" :
         print(f"file \"{fn}\" does not exist")
         sys.exit(1)
     print(f"\"{fn}\" was created at={creation_date(fn)}")
-    print(f"\"{fn}\" was modified at={modify_date(fn)}")
+    print(f"\"{fn}\" was modified at={modification_date(fn)}")
+    print(f"\"{fn}\" earliest = {min(modification_date(fn), creation_date(fn))}")

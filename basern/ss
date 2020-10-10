@@ -1,0 +1,2 @@
+#!/bin/bash -x 
+zip -9r `basename $PWD`-`date '+%m%d%H%M'`.zip `git status -s | grep -v pycache | awk ' { print $2 } '`

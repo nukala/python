@@ -5,10 +5,13 @@ from rnutils import *
 from yesno import yes_no
 from yesno import bool_yesno
 
+import datetime
 import os
 import sys
 import time
 import subprocess
+
+import mtime
 
 
 def get_tmp_dir(subdir = None):
@@ -76,7 +79,15 @@ def do_git_pull(logf):
 # echo "[$(l -s ~/tmp/git/gtpull-05190229.log | awk ' { print $1 } ')]" then
 #    > grep 'files changed' ~/tmp/git/gtpull-05190229.log
 
-def after_tasks(logf):
+def after_tasks(logf, idxTs, objTs):
+  oldest = min(idxTs, objTs)
+  wkago = datetime.datetime.now() - datetime.timedelta(days=7)
+  if (oldest < wkago.timestamp()) :
+    tee_log(logf, f"\noldest={datetime.datetime.fromtimestamp(oldest)} && wkago={wkago}")
+    stat = ask_then_run(['time', 'gtclean'], logf, show_result = True)
+  else:
+    tee_log(logf, f"oldest={datetime.datetime.fromtimestamp(oldest)} is NEWER-THAN wkago={wkago}")
+
   write_log(logf, 'gtclean and others')
   result = 1
   if bool_yesno(f'\nShallow cleanup (y/n) [n]? '):
@@ -110,10 +121,13 @@ def main():
   last_changes = show_gitlast_changes(root, logf)
   tee_log(logf, last_changes)
 
+  idxTs = mtime.modification_timestamp('.git/index')
+  objTs = mtime.modification_timestamp('.git/objects')
+
   ret = do_git_pull(logf)
   if ret == 0:
      # only upon success!
-     after_tasks(logf)
+    after_tasks(logf, idxTs, objTs)
   logf.close()
   if yes_no(f'remove {logf.name} (y/n): ') == 0:
     os.remove(logf.name)
