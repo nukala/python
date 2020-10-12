@@ -177,7 +177,11 @@ def do_run(cmd, logf, inpt = None, special_env = None, show_cmd = False, show_re
     cmdStr = cmd
 
   try:
-    stat = subprocess.run(cmd, stdout = logf, stderr = logf, text = True, input = inpt, env = env, shell = useShell)
+    # THERE SHOULD BE A BETTER WAY
+    if logf is not None:
+      stat = subprocess.run(cmd, stdout = logf, stderr = logf, text = True, input = inpt, env = env, shell = useShell)
+    else:
+      stat = subprocess.run(cmd, text = True, input = inpt, env = env, shell = useShell)
   except (FileNotFoundError) as e:
     tee_log(logf, f"{cmdStr} failed: {e}")
     stat = subprocess.CalledProcessError(252, cmd)

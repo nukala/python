@@ -12,6 +12,7 @@ import time
 import subprocess
 
 import mtime
+import gtclnr
 
 
 def get_tmp_dir(subdir = None):
@@ -21,38 +22,6 @@ def get_tmp_dir(subdir = None):
 
   os.makedirs(dir, exist_ok = True)
   return dir
-
-def git_gc_prune(logf, num_days = 21):
-  """
-  Performs git gc --prune=now
-  git gc --prune=21.days.ago --no-quiet
-  """
-  stat = do_run(['git', 'gc', '--no-quiet', f'--prune={num_days}.days.ago'], logf,
-                show_cmd = True, show_result = True)
-  #tee_log(logf, '\n')
-
-  return stat.returncode
-
-#           git gc --prune=now; git remote prune origin
-
-def git_prune_remote_origin(logf):
-  """
-  Performs - git remote prune origin
-  """
-  stat = do_run(['git', 'remote', 'prune', 'origin'], logf, show_cmd = True, show_result = True)
-  #tee_log(logf, '\n')
-
-  return stat.returncode
-
-
-def git_fetch_prune(logf):
-  """
-  Performs git fetch prune verbose --prune-tags removed
-  """
-  stat = do_run(['git', 'fetch', '--prune', '--verbose'], logf, show_cmd = True, show_result = True)
-  #tee_log(logf, '\n')
-
-  return stat.returncode
 
 
 def do_git_pull(logf):
@@ -82,20 +51,13 @@ def do_git_pull(logf):
 def after_tasks(logf, idxTs, objTs):
   oldest = min(idxTs, objTs)
   wkago = datetime.datetime.now() - datetime.timedelta(days=7)
-  result = 1
+  result = 0
   if (oldest < wkago.timestamp()) :
     tee_log(logf, f"\noldest={datetime.datetime.fromtimestamp(oldest)} && wkago={wkago}")
-    stat = ask_then_run(['time', 'gtclean'], logf, show_result = True)
 
-    write_log(logf, 'gtclean and others')
-    if bool_yesno(f'\nShallow cleanup (y/n) [n]? '):
-      result = git_gc_prune(logf, num_days = 7)
-      result = git_prune_remote_origin(logf)
-      result = git_fetch_prune(logf)
-    
-    if bool_yesno('deep clean (y/n) [n]? '):
-      stat = do_run(['time', 'gtclean'], None, show_result = True)
-      result = stat.returncode
+    clnr = gtclnr.gtclnr()
+    clnr.shallow_clean(logf = logf)
+    clnr.deep_clean(logf = logf)
   else:
     tee_log(logf, f"oldest={datetime.datetime.fromtimestamp(oldest)} is NEWER-THAN wkago={wkago}")
 
@@ -111,13 +73,17 @@ def git_path(root, path):
   return root + os.sep + path
 
 def main():
+  root = get_gitroot(None)
+  if root is None :
+    print(f"No git root in {get_pwd()} or its parent folders, failing")
+    return 1
+
   lf = get_long_filename(prog)
   log = get_tmp_dir("git") + os.sep + get_long_filename(prog)
   logf = open(log, "w")
   log_started_message(logf, prog)
   write_log(logf, f"{prog}: {get_pwd()}")
 
-  root = get_gitroot(None)
   last_changes = show_gitlast_changes(root, logf)
   tee_log(logf, last_changes)
 

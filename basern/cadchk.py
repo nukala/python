@@ -16,7 +16,7 @@ from pathlib import Path
 ####################################################################
 
 def make_expr_file(inpfn, pfx = "tmp"):
-  #print("Processing " + inpfn + ", pfx=" + pfx)
+  print("Processing " + inpfn + ", pfx=" + pfx)
   if not os.path.isfile(inpfn):
     raise Exception('no such file: ' + inpfn)
 
@@ -54,7 +54,13 @@ if __name__ == '__main__':
 
   # -U is context around a diff, 0 is very minimal
   try:
-    rnutils.do_run("git diff --no-index -w -U1 " + ff.name + " " + bff.name, None)
+    rnutils.do_run(f"sort -o {ff.name} {ff.name}", None, show_result = False)
+    rnutils.do_run(f"sort -o {bff.name} {bff.name}", None, show_result = False)
+    rnutils.tee_log(None, "\n")
+
+    stat = rnutils.do_run("git diff --no-index -w -U1 " + ff.name + " " + bff.name, None, show_result = False)
+    if stat.returncode == 0:
+      print(f">>> NO DIFFERENCES")
 
     print(f"Removing {ff.name} and {bff.name}")
     os.remove(ff.name)
