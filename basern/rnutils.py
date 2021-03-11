@@ -86,8 +86,9 @@ def write_log(logf, msg):
     logf.write(f"{message}{os.linesep}")
     logf.flush()
 
-def tee_log(logf, msg):
-  print(msg)
+def tee_log(logf, msg, do_print = True):
+  if do_print == True:
+    print(msg)
   if logf != None:
     write_log(logf, msg)
 
