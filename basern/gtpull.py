@@ -11,6 +11,7 @@ import sys
 import getopt
 import time
 import subprocess
+import argparse
 
 import mtime
 import gtclnr
@@ -49,7 +50,7 @@ def do_git_pull(logf):
 # echo "[$(l -s ~/tmp/git/gtpull-05190229.log | awk ' { print $1 } ')]" then
 #    > grep 'files changed' ~/tmp/git/gtpull-05190229.log
 
-def after_tasks(logf, idxTs, objTs, root): 
+def after_tasks(logf, idxTs, objTs, root, do_clean = False):
   if do_clean == False:
     #print(f"{prog}: after_tasks - returning because flag={do_clean}")
     return
@@ -81,21 +82,23 @@ def show_gitlast_changes(root, logf = None):
 def git_path(root, path):
   return root + os.sep + path
 
-def main(argv):
-  global do_clean
+def main(args):
+  parser = argparse.ArgumentParser(
+              description = "Perform git pull, writes the log and offers to interactively cleanup")
+  parser.add_argument("-c", "--clean", "-cln", action = "store_true", dest = "clean"
+                      , help = "Perform gtclnr if required.")
+  parser.add_argument("-rm", "--rmlog", dest="rmlog", action="store_true"
+                      , help = "remove logs from: pull and clean (if-enabled)")
+  parser.add_argument("-ll", "--lesslog", action = "store_true", dest="lesslog"
+                      , help = "less the_log_file on screen", default = False)
+  parser.add_argument("-v", "--verbose", action = "count", default = 0
+                      , help = "verbose, supports -vv for more verbose"
+                      , dest = "verbose")
+  args = parser.parse_args();
+  do_clean = args.clean;
+  if args.verbose >= 1:
+    print(f"{args}")
 
-  try:
-    opts, args = getopt.getopt(argv, "hc", ["clean"])
-  except getopt.GetoptError:
-    print(f"{prog} -c    -- to run gtclnr ")
-    sys.exit(2)
-  for opt, arg in opts:
-    if opt == '-h':
-       print(f"{prog} -n")
-       sys.exit()
-    elif opt in ('-c', "--c", "--clean"):
-      do_clean = True
-  
   root = get_gitroot(None)
   if root is None :
     print(f"No git root in {get_pwd()} or its parent folders, failing")
@@ -116,9 +119,17 @@ def main(argv):
   ret = do_git_pull(logf)
   if ret == 0:
      # only upon success!
-    after_tasks(logf, idxTs, objTs, root)
+    after_tasks(logf, idxTs, objTs, root, do_clean)
   logf.close()
-  if yes_no(f'remove {logf.name} (y/n): ') == 0:
+
+  if args.lesslog == True:
+    do_run(['less', '-G', logf.name], None, show_cmd = False, show_result = False)
+
+  if args.rmlog == True:
+    if args.verbose >= 2:
+      print(f"  removing logfile={logf.name}")
+    os.remove(logf.name)
+  elif yes_no(f'remove {logf.name} (y/n): ') == 0:
     os.remove(logf.name)
 
   return ret
@@ -127,11 +138,9 @@ def main(argv):
 ######################################################################
 # TODO:  so=2998832 talks about:
 #           git fetch --prune; git fetch --all; git pull
-# TODO argparse; then add --less-log option to force show log, then remove upon success
 ######################################################################
 start = time.time()
-do_clean = False
 prog = get_prog(__file__)
 
 if __name__ == "__main__":
-  sys.exit(main(sys.argv[1:]))
+  sys.exit(main(sys.argv))
