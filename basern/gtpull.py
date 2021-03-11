@@ -8,6 +8,7 @@ from yesno import bool_yesno
 import datetime
 import os
 import sys
+import getopt
 import time
 import subprocess
 
@@ -31,7 +32,7 @@ def do_git_pull(logf):
   """
   #https://blog.sffc.xyz/post/185195398930/why-you-should-use-git-pull-ff-only
   stat = do_run(['git', 'pull', '--no-commit', '--ff-only'], logf, show_result = False)
-  tee_log(logf, f"{prog} = {stat.returncode}, elapsed={round(time.time()-start, 2)} seconds")
+  tee_log(logf, f"{prog} = {stat.returncode}, elapsed={round(time.time()-start, 2)} seconds", do_print = False)
   #logf.close()
 
   if stat.returncode != 0:
@@ -48,16 +49,23 @@ def do_git_pull(logf):
 # echo "[$(l -s ~/tmp/git/gtpull-05190229.log | awk ' { print $1 } ')]" then
 #    > grep 'files changed' ~/tmp/git/gtpull-05190229.log
 
-def after_tasks(logf, idxTs, objTs):
+def after_tasks(logf, idxTs, objTs, root): 
+  if do_clean == False:
+    #print(f"{prog}: after_tasks - returning because flag={do_clean}")
+    return
+
   oldest = min(idxTs, objTs)
   wkago = datetime.datetime.now() - datetime.timedelta(days=7)
   result = 0
+  # oldest < wkago.timestamp()
   if (oldest < wkago.timestamp()) :
     tee_log(logf, f"\noldest={datetime.datetime.fromtimestamp(oldest)} && wkago={wkago}")
 
-    clnr = gtclnr.gtclnr()
-    clnr.shallow_clean(logf = logf)
-    clnr.deep_clean(logf = logf)
+    clnr = gtclnr.gtclnr(logf)
+    clnr.show_preclean_size(logf)
+    if (clnr.shallow_clean(logf) == 0) :
+      clnr.deep_clean(logf)
+      clnr.show_savings(logf)
   else:
     tee_log(logf, f"oldest={datetime.datetime.fromtimestamp(oldest)} is NEWER-THAN wkago={wkago}")
 
@@ -65,14 +73,29 @@ def after_tasks(logf, idxTs, objTs):
 
 
 def show_gitlast_changes(root, logf = None):
-  m = getoutput_from_run(['ls', '-ltrd', git_path(root, 'index'), git_path(root, 'objects')],
-                         logf, show_result = False)
-  return m['stdout']
+  lsl = getoutput_from_run(['ls', '-ltrd', git_path(root, 'index'), git_path(root, 'objects')],
+                         None, show_output = False, show_result = False)
+  return lsl['stdout']
+
 
 def git_path(root, path):
   return root + os.sep + path
 
-def main():
+def main(argv):
+  global do_clean
+
+  try:
+    opts, args = getopt.getopt(argv, "hc", ["clean"])
+  except getopt.GetoptError:
+    print(f"{prog} -c    -- to run gtclnr ")
+    sys.exit(2)
+  for opt, arg in opts:
+    if opt == '-h':
+       print(f"{prog} -n")
+       sys.exit()
+    elif opt in ('-c', "--c", "--clean"):
+      do_clean = True
+  
   root = get_gitroot(None)
   if root is None :
     print(f"No git root in {get_pwd()} or its parent folders, failing")
@@ -85,7 +108,7 @@ def main():
   write_log(logf, f"{prog}: {get_pwd()}")
 
   last_changes = show_gitlast_changes(root, logf)
-  tee_log(logf, last_changes)
+  tee_log(logf, f"{last_changes}", do_print = False)
 
   idxTs = mtime.modification_timestamp(git_path(root, 'index'))
   objTs = mtime.modification_timestamp(git_path(root, 'objects'))
@@ -93,7 +116,7 @@ def main():
   ret = do_git_pull(logf)
   if ret == 0:
      # only upon success!
-    after_tasks(logf, idxTs, objTs)
+    after_tasks(logf, idxTs, objTs, root)
   logf.close()
   if yes_no(f'remove {logf.name} (y/n): ') == 0:
     os.remove(logf.name)
@@ -107,7 +130,8 @@ def main():
 # TODO argparse; then add --less-log option to force show log, then remove upon success
 ######################################################################
 start = time.time()
+do_clean = False
 prog = get_prog(__file__)
 
 if __name__ == "__main__":
-  sys.exit(main())
+  sys.exit(main(sys.argv[1:]))
