@@ -15,7 +15,7 @@ from pathlib import Path
 #
 ####################################################################
 
-def make_expr_file(inpfn, pfx = "tmp"):
+def make_expr_file(inpfn, pfx = "tmp-"):
   print("Processing " + inpfn + ", pfx=" + pfx)
   if not os.path.isfile(inpfn):
     raise Exception('no such file: ' + inpfn)
@@ -27,7 +27,7 @@ def make_expr_file(inpfn, pfx = "tmp"):
       exp = d['expression']
       exps.append(exp)
 
-  # Generate a temporary file-object that will deleteOnExit 
+  # Generate a temporary file-object that will deleteOnExit
   # returning name or closing the temp-file unlinks in filesystem
   tmpff = tempfile.NamedTemporaryFile(prefix = pfx, suffix = ".cdchk", delete = False)
   #print("Found " + str(len(exps)) + " items in " + inpfn)
@@ -40,7 +40,7 @@ def make_expr_file(inpfn, pfx = "tmp"):
 boxFN = str(os.environ['BOXDIR']) + os.sep + "CAD_Expressions.json"
 
 ##########
-## 
+##
 
 if __name__ == '__main__':
   if len(sys.argv) < 2:
