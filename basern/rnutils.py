@@ -259,3 +259,16 @@ def get_num_modifications(logf):
       num = num + 1
       
   return num
+
+def get_gitbranch(logf = None):
+  """
+  " equivalent to gtbr
+  """
+  branch = None
+  m = getoutput_from_run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], logf, show_result = False, show_cmd = False)
+  #print(f"{m}")
+
+  if m['returncode'] == 0:
+    branch = m['stdout']
+
+  return branch
