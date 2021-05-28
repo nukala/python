@@ -99,14 +99,18 @@ def main(args):
   if args.verbose >= 1:
     print(f"{args}")
 
+
+  logf = None
+  tee_log(logf, f"branch = [{get_gitbranch(None)}]")
   root = get_gitroot(None)
   if root is None :
-    print(f"No git root in {get_pwd()} or its parent folders, failing")
+    tee_log(logf, f"No git root in {get_pwd()} or its parent folders, failing")
     return 1
 
   lf = get_long_filename(prog)
   log = get_tmp_dir("git") + os.sep + get_long_filename(prog)
   logf = open(log, "w")
+
   log_started_message(logf, prog)
   write_log(logf, f"{prog}: {get_pwd()}")
 
@@ -131,6 +135,8 @@ def main(args):
     os.remove(logf.name)
   elif yes_no(f'remove {logf.name} (y/n): ') == 0:
     os.remove(logf.name)
+  else:
+    do_run(f"echo {logf.name} | tr -d \"\n\" | pbcopy", None, show_cmd = False, show_result = False)
 
   return ret
 
@@ -138,6 +144,11 @@ def main(args):
 ######################################################################
 # TODO:  so=2998832 talks about:
 #           git fetch --prune; git fetch --all; git pull
+# way to cat logs if --rm is enabled:
+#  grep -e change -e deletion -e ' | ' /Users/ravinukala/tmp/git/gtpull-03151227.log
+#
+# TODO: do not remove log upon error
+#       branch aware pull
 ######################################################################
 start = time.time()
 prog = get_prog(__file__)
