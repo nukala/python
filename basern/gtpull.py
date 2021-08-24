@@ -25,6 +25,24 @@ def get_tmp_dir(subdir = None):
   os.makedirs(dir, exist_ok = True)
   return dir
 
+def do_git_fetch(logf = None, verbose = False):
+  """
+  " Fetches from the repository, including tags, pruning delegated to clnr
+  """ 
+  stat = do_run(['git', 'fetch', '--all', '--tags'], logf,
+                show_result = True, show_cmd = verbose)
+  tee_log(logf, f"{prog}: fetch={stat.returncode}, elapsed={round(time.time()-start, 2)} seconds",
+         do_print = False)
+
+  # if failure, ask to run fetch --force manually
+  if stat.returncode != 0:
+    msg = "git fetch --all --force --multiple --tags"
+    do_run(f"echo {msg} | pbcopy", None, show_cmd = False, show_result = False)
+    tee_log(logf, f"{prog}: fetch tags failed. Manually run=\"{msg}\".", do_print = False)
+    sys.stderr.write(f"\t {msg} [ CMD+V ]\n")
+
+  return stat.returncode 
+
 
 def do_git_pull(logf):
   """
@@ -33,7 +51,7 @@ def do_git_pull(logf):
   """
   #https://blog.sffc.xyz/post/185195398930/why-you-should-use-git-pull-ff-only
   stat = do_run(['git', 'pull', '--no-commit', '--ff-only'], logf, show_result = False)
-  tee_log(logf, f"{prog} = {stat.returncode}, elapsed={round(time.time()-start, 2)} seconds", do_print = False)
+  tee_log(logf, f"{prog}: pull={stat.returncode}, elapsed={round(time.time()-start, 2)} seconds", do_print = False)
   #logf.close()
 
   if stat.returncode != 0:
@@ -82,6 +100,7 @@ def show_gitlast_changes(root, logf = None):
 def git_path(root, path):
   return root + os.sep + path
 
+
 def main(args):
   parser = argparse.ArgumentParser(
               description = "Perform git pull, writes the log and offers to interactively cleanup")
@@ -119,7 +138,7 @@ def main(args):
 
   idxTs = mtime.modification_timestamp(git_path(root, 'index'))
   objTs = mtime.modification_timestamp(git_path(root, 'objects'))
-
+  do_git_fetch(logf, args.verbose)
   ret = do_git_pull(logf)
   if ret == 0:
      # only upon success!
@@ -143,7 +162,7 @@ def main(args):
 
 ######################################################################
 # TODO:  so=2998832 talks about:
-#           git fetch --prune; git fetch --all; git pull
+#           git fetch --prune --prune-tags; git fetch --all --tags; git pull
 # way to cat logs if --rm is enabled:
 #  grep -e change -e deletion -e ' | ' /Users/ravinukala/tmp/git/gtpull-03151227.log
 #
