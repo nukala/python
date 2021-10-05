@@ -14,6 +14,11 @@ def is_exists(fn):
   else:
     return False
 
+def duks(dir = ".", logf = None, show_result = False, show_output = False):
+  duks = getoutput_from_run(['du', '-ks', f"{dir}"], logf, show_result= show_result, show_output = show_output)
+  sz = int(duks['stdout'].split()[0])
+  return sz
+
 def rename(fn, renamed):
   stat = subprocess.run(["mv", fn, renamed], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
   if stat.returncode == 0:
@@ -160,7 +165,7 @@ def getoutput_from_run(cmd, logf, show_cmd = False, show_result = True, show_out
 ###
 def do_run(cmd, logf, inpt = None, special_env = None, show_cmd = False, show_result = True):
   """
-  Runs the specified cmd or list 
+  Runs the specified cmd or list
   grabs all the output (may encounter bufffing challenges) into memory
   """
   if show_cmd == True:
@@ -214,6 +219,20 @@ def get_pwd(use_tilda = True):
 
   return pwd
 
+def short_pwd():
+  here = get_pwd(False)
+  a = os.getcwd().replace("\\", "/").split('/')
+  ret=here
+
+  sz = len(a)
+  if sz >= 3:
+    ret = f"{a[sz-3]}/{a[sz-2]}/{a[sz-1]}"
+  elif sz == 2:
+    ret = f"{a[sz-2]}/{a[sz-1]}"
+
+  #ret = f"{ret}.{sz}"
+  return ret
+
 def get_prog(path):
   if path is not None:
     prog = path
@@ -257,7 +276,7 @@ def get_num_modifications(logf):
     i = i.strip()
     if i.startswith("M"):
       num = num + 1
-      
+
   return num
 
 def get_gitbranch(logf = None):
