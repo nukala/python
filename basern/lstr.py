@@ -110,7 +110,7 @@ def main() :
       #print(f"{fil}")
       lstr.run(fil)
   except KeyboardInterrupt:
-    print("")
+    pass
   lstr.done()
 
   # does not work : resource in use
