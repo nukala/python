@@ -37,7 +37,7 @@ def make_expr_file(inpfn, pfx = "tmp-"):
   #print("    wrote into [" + tmpff.name + "]")
   return tmpff
 
-boxFN = str(os.environ['BOXDIR']) + os.sep + "CAD_Expressions.json"
+boxFN = str(os.environ['BOXDIR']) + os.sep + "CAD-Expressions.json"
 
 ##########
 ##
@@ -45,9 +45,14 @@ boxFN = str(os.environ['BOXDIR']) + os.sep + "CAD_Expressions.json"
 if __name__ == '__main__':
   if len(sys.argv) < 2:
     print("Requires a file to compare boxdir version against.")
+    print("Optionally 2nd paramter is boxfile")
     sys.exit(2)
 
   ff = make_expr_file(sys.argv[1])
+  if len(sys.argv) > 2:
+    boxFN = sys.argv[2]
+#    print(f"Using boxFN={boxFN}")
+
   bff = make_expr_file(boxFN, pfx = "box-")
 
   #os.system('ls -ltrd ' + ff + " " + bff)
