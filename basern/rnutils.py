@@ -8,11 +8,33 @@ import time
 
 
 
-def is_exists(fn):
-  if os.path.exists(fn):
-    return True
-  else:
-    return False
+def is_empty(string):
+    """
+    True only if the specified string is empty
+    """
+    if not string:
+        return True
+
+    return len(string) == 0
+
+
+def is_not_empty(string):
+    """
+    True only if the specified string is not empty
+    """
+    return not is_empty(string)
+
+
+def is_exists(filename):
+    """
+    True if filename is not-empty AND file exists
+    :param filename:
+    :return:
+    """
+    try:
+        return is_not_empty(filename) and os.path.exists(filename)
+    except FileNotFoundError:
+        return False
 
 def duks(dir = ".", logf = None, show_result = False, show_output = False):
   duks = getoutput_from_run(['du', '-ks', f"{dir}"], logf, show_result= show_result, show_output = show_output)
