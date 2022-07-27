@@ -1,6 +1,11 @@
+default: all
+
+
+all: init
 
 init:
-	virtualenv -v --setuptools env
+	@echo 'INIT: Not sure how we can use an env if running as a script from anywhere'
+#	python3 -m venv --without-pip --symlinks --system-site-packages env
 
 clean:
 	rm -rf __pycache__
