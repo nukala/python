@@ -4,6 +4,7 @@
 
 import pendulum as pdl
 import sys
+import re
 
 
 # pendulum.parse(str)
@@ -27,12 +28,14 @@ class Cvt:
         'MMMM DD hh:mma z',  # July 23 11:00pm AEST
         'ddd DD MMMM hh:mma z', # Sun 17 July 5:00am AEST
         'dddd, DD.MM.YYYY ha z', # Wednesday, 27.07.2022 5am CEST
+        'DDMMYYYY ha z', # 09.08.2022  5am CEST
         'hh:mma z', # 7:39PM UTC
         'hh:ma z',  # 7:39PM UTC
         'h:mma z',  # 7:39PM UTC
         'h:ma z',  # 7:39PM UTC
     ]
 
+    # dt.strftime("%Y-%m-%dT%H:%M:%S")
     def __init__(self, time_str):
         self.orig_str = time_str.strip()
         self.dt = None
@@ -47,11 +50,13 @@ class Cvt:
             pass
 
     def _normalize(self) :
+        # squeeze out spaces
+        dt_str = re.sub(' +', ' ', self.orig_str)
         # if 'AEST' in dtstr.capitalize():
         # trim spaces by strip
         # translate to remove punctuation
         #   translate(str.maketrans('', '', string.punctuation)) REMOVES ':' not acceptable \
-        dt_str = self.orig_str \
+        dt_str = dt_str \
             .replace(',', '').replace('.', '').replace('#', '') \
             .strip()\
             .replace('AEST', 'Australia/Sydney').replace('AEDT', 'Australia/Sydney')\
