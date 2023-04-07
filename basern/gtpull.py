@@ -29,7 +29,7 @@ def do_git_fetch(logf = None, verbose = False):
   """
   " Fetches from the repository, including tags, pruning delegated to clnr
   """ 
-  stat = do_run(['git', 'fetch', '--all', '--tags'], logf,
+  stat = do_run(['git', 'fetch', '--all', '--tags', '--prune', '--prune-tags' ], logf,
                 show_result = True, show_cmd = verbose)
   tee_log(logf, f"{prog}: fetch={stat.returncode}, elapsed={round(time.time()-start, 2)} seconds",
          do_print = False)
@@ -92,7 +92,9 @@ def after_tasks(logf, idxTs, objTs, root, do_clean = False):
 
 
 def show_gitlast_changes(root, logf = None):
-  lsl = getoutput_from_run(['ls', '-ltrd', git_path(root, 'index'), git_path(root, 'objects')],
+  #fn = "objects"
+  fn = "FETCH_HEAD"
+  lsl = getoutput_from_run(['ls', '-ltrd', git_path(root, 'index'), git_path(root, fn)],
                          None, show_output = False, show_result = False)
   return lsl['stdout']
 
