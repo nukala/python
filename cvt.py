@@ -1,8 +1,9 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.11
 # coding: utf-8
 import os
 
 import pendulum as pdl
+import re
 import sys
 
 from distutils.util import  strtobool
@@ -19,11 +20,16 @@ class Cvt:
     # https://github.com/sdispater/pendulum/blob/master/docs/docs/string_formatting.md
     # https://github.com/sdispater/pendulum/blob/master/docs/docs/timezones.md
     fmts = [
-        '',
         'dddd MMMM DD hh:mma z',  # Saturday July 23 11:00pm AEST
         'dddd DD MMM hh:mma z',
         'MMMM DD hh:mma z',  # July 23 11:00pm AEST
         'ddd DD MMMM hh:mma z', # Sun 17 July 5:00am AEST
+
+        'hh:mma z',  # 7:39PM UTC
+        'hh:ma z',  # 7:39PM UTC
+        'h:mma z',  # 7:39PM UTC
+        'h:ma z',  # 7:39PM UTC
+
         'dddd DD:MM:YYYY ha z', # Wednesday 27.07.2022 5am CEST
         'dddd DD:MM:YYYY hh:mm a z', # Tuesday, 30:08:2022 07:00 am CEST
         'DDMMYYYY ha z', # 09.08.2022  5am CEST
@@ -34,18 +40,25 @@ class Cvt:
         'ddd DD MMM YYYY HH:mm:ss z', # Thu, 15 Sep 2022 13:29:26 GMT
         'DD/MM/YYYY HH:mm z', # 24/09/2022 19:00 BST
         'MMMM DD YYYY HH a z', # September 27 2022 5 am Europe/Berlin
-
-        'hh:mma z', # 7:39PM UTC
-        'hh:ma z',  # 7:39PM UTC
-        'h:mma z',  # 7:39PM UTC
-        'h:ma z',  # 7:39PM UTC
-
-    ]
+        'MMM DD HH:mm z', # Sep 26, 16:53 AEST
+        'dddd MMMM DD YYYY HH:mm z',  # Thursday, September 29, 2022, 8:00
+        'dddd MMMM DD YYYY HH:mm a z',  # Thursday, September 29, 2022, 10:00 am
+        'dddd DD MMMM HH:mm a z', #Sunday 2 October 6:00 pm BST
+        'dddd MMMM DD YYYY HH a z', # Sunday October 9, 2022 4 pm
+        'ddd DD MMM hh:mma z', # Sat 15 Oct 09:00pm AEST
+        'dddd DDMMYYYY HHa z', # 'Sunday, 05.02.2023 between 8am (CET)'
+        'dddd DD MMMM hha z', # Saturday 18 February 6pm
+        'DD MMMM HH:mm z', # 27th February -  20:00 (GMT)
+        'ddd DD MMMM HH:mm a z', #Sat 18th March 11:00 –11:59 PM AEDT
+        'HH:mma ddd DD MMM z', # 10:00pm Sat 11th Mar (AEDT)
+        'dddd MMMM DD YYYY hha z', #Tuesday, March 28th 2023 6am 8pm (CEST)
+     ]
 
     # dt.strftime("%Y-%m-%dT%H:%M:%S")
     def __init__(self, time_str):
         self.orig_str = time_str.strip()
         self.dt = None
+        # to enable PYDBG=1 or on or yes or y
         self.debug = bool(strtobool(os.getenv('PYDBG', 'False')))
 
         self._normalize()
@@ -73,9 +86,17 @@ class Cvt:
             .replace('(', '').replace(')', '') \
             .replace('AEST', 'Australia/Sydney').replace('AEDT', 'Australia/Sydney')\
             .replace("CEST", 'Europe/Berlin').replace("CET", 'Europe/Berlin') \
-            .replace("BST", "Europe/London") \
+            .replace("BST", "Europe/London").replace("BDT", "Europe/London") \
             .strip().replace(' +', ' ')
-        # print(dtstr)
+
+        dt_str = re.sub('[aA][mM]', 'am', dt_str)
+        dt_str = re.sub('[pP][mM]', 'pm', dt_str)
+        # SOa/45497158
+        dt_str = re\
+            .compile(r'(?<=\d)(th|nd|rd|st)')\
+            .sub("", dt_str)
+
+        self.dbg(f"[{self.orig_str}] became [{dt_str}]")
         self.time_str = dt_str
         self.dbg(f"[{self.orig_str}] became [{self.time_str}]")
 
@@ -95,7 +116,7 @@ class Cvt:
                     self.dt = pdl.from_format(self.time_str, fmt)
 
         except ValueError as ve:
-            self.dbg(f"  [{fmt}] error: {repr(ve)}")
+            #self.dbg(f"  [{fmt}] error: {repr(ve)}")
             pass
 
     def _parseDatetime(self):
@@ -123,14 +144,21 @@ if __name__ == "__main__":
     #dtstr = "2022-07-13T12:33:14.859Z"
     dtstr = "Saturday July 23 11:03pm AEDT "
     dtstr = "7:39PM UTC"
-    dtstr = "30 August 2022 20:00 BST"
+    dtstr = "30th August 2022 20:00 BST"
     #dt = pdl.from_format(dtstr, 'hh:mma z')
-    fmt = 'DD MMMM YYYY HH:mm z'  # 30 August 2022 20:00 BST
+    fmt = Cvt.fmts[-1]
 
-    if len(sys.argv) > 1:
-        dtstr = sys.argv[1]
+    args = sys.argv[1:] if len(sys.argv) > 1 else ["blah", dtstr]
 
-    cvt = Cvt(dtstr)
-    cvt.doParseDt(fmt)
-    cvt.dbg(f"[{dtstr}] becomes\n{cvt.show()}")
-    print(f"{cvt.show()}")
+    counter = 1
+    for dtstr in args:
+        counter = counter + 1
+        cvt = Cvt(dtstr)
+        cvt.doParseDt(fmt)
+        cvt.dbg(f"[{dtstr}] becomes\n{cvt.show()}")
+        print(f"{cvt.show()}")
+
+        if len(args) > 1 and counter % 2 == 0:
+            print(f" to ")
+        elif counter > 2:
+            print(f"")
