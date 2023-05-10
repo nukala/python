@@ -46,7 +46,8 @@ class BzlProc:
 "--test_summary=detailed",
 "--test_verbose_timeout_warnings",
 "--verbose_failures",
-"--worker_verbose",
+"--worker_verbose", "6",
+"--verbose_test_summary", 
 "..." ]
     return self.bzl(cmds, "Initial test")
 
@@ -69,4 +70,4 @@ logf = open(get_next_logname(prog), "w")
 if __name__ == "__main__":
   bp = BzlProc()
 
-  bp.bzl("./tst", 'wrapper script')
+  bp.bzl("./tst ...", 'wrapper script')

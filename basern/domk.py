@@ -18,8 +18,10 @@ def do_make(tgt, logf, env = None):
   theenv = dict(myenv, V = "1", VERBOSE = "1", SHDEBUG="true")
 
   cmd = "make"
+  print(f"tail -f {get_pwd()}{os.sep}{logf.name} in a different terminal")
   stat = do_run([cmd, tgt],
            logf,
+		   show_output = True,
            special_env = theenv)
   return stat
 
