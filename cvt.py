@@ -2,6 +2,12 @@
 # coding: utf-8
 import os
 
+#######################################################
+# Add support for --rmis and such to substitue the entire text if parsing succeed:
+# RoyalMail (InterSoft) will be performing maintenance on their <optional | api type, e.g. international> API from May 02 12:00 PM PDT to May 02 04:01 PM PDT.
+#
+# During this time RoyalMail (InterSoft) <type of service down or just say all services, e.g. International label generation> will be unavailable.
+#######################################################
 import pendulum as pdl
 import re
 import sys
@@ -39,6 +45,7 @@ class Cvt:
         'YYYY-MM-DD HH:mm:ss z',  # 2022-09-08 22:06:57
         'ddd DD MMM YYYY HH:mm:ss z', # Thu, 15 Sep 2022 13:29:26 GMT
         'DD/MM/YYYY HH:mm z', # 24/09/2022 19:00 BST
+        'DD-MM-YYYY HH:mm z',  # 01-06-23   21:00 Europe/Madrid
         'MMMM DD YYYY HH a z', # September 27 2022 5 am Europe/Berlin
         'MMM DD HH:mm z', # Sep 26, 16:53 AEST
         'dddd MMMM DD YYYY HH:mm z',  # Thursday, September 29, 2022, 8:00
@@ -60,7 +67,12 @@ class Cvt:
         self.dt = None
         # to enable PYDBG=1 or on or yes or y
         self.debug = bool(strtobool(os.getenv('PYDBG', 'False')))
+        self.verbose = bool(strtobool(os.getenv("PYVRBS", 'False')))
 
+        if self.verbose == True:
+            self.debug = True
+
+        self.dbg("env[{PYVRBS}] = [{self.verbose}], using verbose logs")
         self._normalize()
         if len(self.time_str) > 4:
           self._parseDatetime()
@@ -70,6 +82,12 @@ class Cvt:
     def dbg(self, string):
         if self.debug:
             print(f" >>dbg: {string}")
+        else:
+            pass
+
+    def vrbs(self, string):
+        if self.verbose:
+            print(f" >>vrbs: {string}")
         else:
             pass
 
@@ -87,7 +105,9 @@ class Cvt:
             .replace('AEST', 'Australia/Sydney').replace('AEDT', 'Australia/Sydney')\
             .replace("CEST", 'Europe/Berlin').replace("CET", 'Europe/Berlin') \
             .replace("BST", "Europe/London").replace("BDT", "Europe/London") \
+            .replace("europe", "Europe").replace("asia", "Asia").replace("america", "America") \
             .strip().replace(' +', ' ')
+
 
         dt_str = re.sub('[aA][mM]', 'am', dt_str)
         dt_str = re.sub('[pP][mM]', 'pm', dt_str)
@@ -109,12 +129,12 @@ class Cvt:
     def doParseDt(self, fmt):
         try:
             if not self.dt:
-                self.dbg(f"str={self.time_str}, dt={self.dt} and format={fmt}")
+                self.vrbs(f"str={self.time_str}, dt={self.dt} and format={fmt}")
                 if len(fmt) == 0:
                     self.dt = pdl.parse(self.time_str);
                 else:
                     self.dt = pdl.from_format(self.time_str, fmt)
-
+                self.dbg(f"matched {self.dt} with format=[{fmt}]")
         except ValueError as ve:
             #self.dbg(f"  [{fmt}] error: {repr(ve)}")
             pass
@@ -155,10 +175,10 @@ if __name__ == "__main__":
         counter = counter + 1
         cvt = Cvt(dtstr)
         cvt.doParseDt(fmt)
-        cvt.dbg(f"[{dtstr}] becomes\n{cvt.show()}")
-        print(f"{cvt.show()}")
+        cvt.dbg(f"[{dtstr}] becomes {cvt.show()}")
+        print(f"{cvt.show()}", end = '')
 
         if len(args) > 1 and counter % 2 == 0:
-            print(f" to ")
+            print(f" to ", end = '')
         elif counter > 2:
             print(f"")
