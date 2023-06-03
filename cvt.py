@@ -11,6 +11,7 @@ import os
 import pendulum as pdl
 import re
 import sys
+from argparse import ArgumentParser
 
 from distutils.util import  strtobool
 
@@ -44,8 +45,10 @@ class Cvt:
         'HH:mm dddd DD MMMM z', # 19:00 Saturday 10th September BST
         'YYYY-MM-DD HH:mm:ss z',  # 2022-09-08 22:06:57
         'ddd DD MMM YYYY HH:mm:ss z', # Thu, 15 Sep 2022 13:29:26 GMT
+        'DD/MM/YY HH:mm z', # 24/09/22 19:00 BST
+        'DD-MM-YY HH:mm z',  # 01-06-23   21:00 Europe/Madrid
         'DD/MM/YYYY HH:mm z', # 24/09/2022 19:00 BST
-        'DD-MM-YYYY HH:mm z',  # 01-06-23   21:00 Europe/Madrid
+        'DD-MM-YYYY HH:mm z',  # 01-06-2023   21:00 Europe/Madrid
         'MMMM DD YYYY HH a z', # September 27 2022 5 am Europe/Berlin
         'MMM DD HH:mm z', # Sep 26, 16:53 AEST
         'dddd MMMM DD YYYY HH:mm z',  # Thursday, September 29, 2022, 8:00
@@ -61,39 +64,79 @@ class Cvt:
         'dddd MMMM DD YYYY hha z', #Tuesday, March 28th 2023 6am 8pm (CEST)
      ]
 
-    # dt.strftime("%Y-%m-%dT%H:%M:%S")
-    def __init__(self, time_str):
-        self.orig_str = time_str.strip()
-        self.dt = None
-        # to enable PYDBG=1 or on or yes or y
-        self.debug = bool(strtobool(os.getenv('PYDBG', 'False')))
-        self.verbose = bool(strtobool(os.getenv("PYVRBS", 'False')))
+    def parse_args(self):
+        parser = ArgumentParser(prog = 'cvt'
+                                , description='To convert strings into Pacific timezone equivalents'
+                                , epilog="START_STR is required")
+        parser.add_argument('-f', '--from', dest='start_str', nargs="?", default=None, required=True
+                            , help='when the maintenance starts')
+        parser.add_argument('-t', '--to', dest='end_str', nargs="?", default=None, required=False
+                            , help='when the maintenance completes')
 
-        if self.verbose == True:
+        parser.add_argument('-d', '--debug', action='store_true', default=False, dest = "debug"
+                            , help='Enable debug logs')
+        parser.add_argument('-v', '--verbose', action='store_true', default=False, dest="verbose"
+                            , help='Enable verbose logs')
+        parser.add_argument('-es', '--es', '--madrid', dest="madrid"
+                            , action='store_true', required=False, default=False
+                            , help='Append Europe/Madrid as the timezone')
+        parser.add_argument('-uk', '--uk', '--london', dest="london"
+                            , action='store_true', required=False, default=False
+                            , help='Append Europe/London as the timezone')
+        parser.add_argument('-fr', '--fr', '--paris', dest="paris"
+                            , action='store_true', required=False, default=False
+                            , help='Append Europe/Paris as the timezone')
+        parser.add_argument('--de', '--de', '--berlin', dest="berlin"
+                            , action='store_true', required=False, default=False
+                            , help='Append Europe/Berlin as the timezone')
+        parser.add_argument('--au', '--au', '--sydney', dest="sydney"
+                            , action='store_true', required=False, default=False
+                            , help='Append Australia/Sydney as the timezone')
+        parsed = parser.parse_args()
+        #print(f"PARSED> {parsed}, from=[{parsed.start_str}], to=[{parsed.end_str}], "
+        #      f"madrid={parsed.madrid}, debug={parsed.debug}, verbose={parsed.verbose}")
+        return parsed
+
+    # match and case are new in 3.10, so lets use elif for now
+    def tz_name(self):
+        ret = None
+        if self.parsed.madrid:
+            ret = "Europe/Madrid"
+        elif self.parsed.london:
+            ret = "Europe/Lodon"
+        elif self.parsed.paris:
+            ret = "Europe/Paris"
+        elif self.parsed.berlin:
+            ret = "Europe/Berlin"
+        elif self.parsed.sydney:
+            ret = "Australia/Sydney"
+        if not ret:
+            self.dbg(f"parsed=[{self.parsed}] no timezone {ret}")
+        return ret
+
+    def __init__(self):
+        self.parsed = self.parse_args()
+        self.debug = self.parsed.debug
+        self.verbose = self.parsed.verbose
+
+        if self.parsed.verbose == True:
             self.debug = True
 
-        self.dbg("env[{PYVRBS}] = [{self.verbose}], using verbose logs")
-        self._normalize()
-        if len(self.time_str) > 4:
-          self._parseDatetime()
-        else:
-          self.convert()
-
-    def dbg(self, string):
+    def dbg(self, str):
         if self.debug:
-            print(f" >>dbg: {string}")
+            print(f" >>dbg: {str}")
         else:
             pass
 
-    def vrbs(self, string):
+    def vrbs(self, str):
         if self.verbose:
-            print(f" >>vrbs: {string}")
+            print(f" >>vrbs: {str}")
         else:
             pass
 
-    def _normalize(self) :
+    def _normalize(self, some_str) :
         # squeeze out spaces
-        dt_str = " ".join(self.orig_str.split())
+        dt_str = " ".join(some_str.split())
         # if 'AEST' in dtstr.capitalize():
         # trim spaces by strip
         # translate to remove punctuation
@@ -116,69 +159,73 @@ class Cvt:
             .compile(r'(?<=\d)(th|nd|rd|st)')\
             .sub("", dt_str)
 
-        self.dbg(f"[{self.orig_str}] became [{dt_str}]")
-        self.time_str = dt_str
-        self.dbg(f"[{self.orig_str}] became [{self.time_str}]")
+        self.dbg(f"[{some_str}] became [{dt_str}]")
+        return dt_str
 
     @staticmethod
-    def is_datetime_string(dtstr):
-        if not dtstr and len(dtstr) <= 0:
+    def is_datetime_string(dt_str):
+        if not dt_str and len(dt_str) <= 0:
             return False
         return True
 
-    def doParseDt(self, fmt):
+    def get_from(self):
+        return self.parsed.start_str
+
+    def get_to(self):
+        return self.parsed.end_str
+
+    def doParseDt(self, fmt, dt_str):
+        ret = None
         try:
-            if not self.dt:
-                self.vrbs(f"str={self.time_str}, dt={self.dt} and format={fmt}")
-                if len(fmt) == 0:
-                    self.dt = pdl.parse(self.time_str);
-                else:
-                    self.dt = pdl.from_format(self.time_str, fmt)
-                self.dbg(f"matched {self.dt} with format=[{fmt}]")
+            self.vrbs(f"Trying: str={dt_str}, and format={fmt}")
+            if len(fmt) == 0:
+                ret = pdl.parse(dt_str);
+            else:
+                ret = pdl.from_format(dt_str, fmt)
+            if ret:
+                self.dbg(f"MATCHED {dt_str} with format=[{fmt}], is=[{ret}]")
         except ValueError as ve:
-            #self.dbg(f"  [{fmt}] error: {repr(ve)}")
             pass
 
-    def _parseDatetime(self):
-        if not self.is_datetime_string(self.time_str):
+        return ret
+
+    def parseDatetime(self, str):
+        if not self.is_datetime_string(str):
             return
-        if self.dt:
-            return
+
+        dt_str = self._normalize(str)
         for fmt in self.fmts:
-            self.doParseDt(fmt)
+            the_dt = self.doParseDt(fmt, dt_str)
 
-            if self.dt:
+            if the_dt:
                 break
+        return the_dt
 
-    def show(self):
-        self._parseDatetime()
-        if not self.dt:
-            return f"NOTHING for [{self.time_str}]"
+    def show(self, dt_str):
+        dt = self.parseDatetime(dt_str)
+        if not dt:
+            tz = self.tz_name()
+            if tz:
+                dt_str = f"{dt_str} {self.tz_name()}"
+                dt = self.parseDatetime(dt_str)
+            if not dt:
+                return f"NOTHING for [{dt_str}], tz=[{tz}]"
+
         ca_tz = pdl.timezone('America/Los_Angeles')
-        ca_dt = self.dt.in_tz(ca_tz)
+        ca_dt = dt.in_tz(ca_tz)
         return ca_dt.strftime('%B %d %I:%M %p %Z')
 
 
 
 if __name__ == "__main__":
-    #dtstr = "2022-07-13T12:33:14.859Z"
-    dtstr = "Saturday July 23 11:03pm AEDT "
-    dtstr = "7:39PM UTC"
-    dtstr = "30th August 2022 20:00 BST"
-    #dt = pdl.from_format(dtstr, 'hh:mma z')
-    fmt = Cvt.fmts[-1]
+    cvt = Cvt()
+    bgn = cvt.show(cvt.get_from())
+    edn = None
+    if cvt.get_to():
+        edn = cvt.show(cvt.get_to())
 
-    args = sys.argv[1:] if len(sys.argv) > 1 else ["blah", dtstr]
+    print(f"{bgn}", end = '')
+    if edn:
+        print(f" to {edn}", end = '')
 
-    counter = 1
-    for dtstr in args:
-        counter = counter + 1
-        cvt = Cvt(dtstr)
-        cvt.doParseDt(fmt)
-        cvt.dbg(f"[{dtstr}] becomes {cvt.show()}")
-        print(f"{cvt.show()}", end = '')
-
-        if len(args) > 1 and counter % 2 == 0:
-            print(f" to ", end = '')
-        elif counter > 2:
-            print(f"")
+    print("")
