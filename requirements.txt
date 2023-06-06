@@ -1,6 +1,7 @@
-psutil==5.7.0
-boto==2.49.0
+cffi==1.15.1
+docutils==0.19
 pendulum==2.1.2
+pycparser==2.21
 python-dateutil==2.8.2
 pytzdata==2020.1
 six==1.16.0
