@@ -3,7 +3,7 @@
 
 from rnutils import *
 from gtpull import *
-
+from argparse import ArgumentParser
 
 class gtclnr:
   logf = None
@@ -11,7 +11,38 @@ class gtclnr:
     self.root = get_gitroot()   
     self.pre_clean = 0
     self.post_clean = 0
-    #print(f"ctor logf={self.logf}, type={type(self.logf)}")
+    self.parsed = self.parse_args()
+    self.nogtcln = self.parsed.nogtcln
+    self.debug = self.parsed.debug
+    if self.parsed.verbose:
+      self.debug = True
+      self.verbose = True
+
+
+  def dbg(self, str):
+    if self.debug:
+      print(f" >>dbg: {str}")
+
+  def vrbs(self, str):
+    if self.verbose:
+      print(f" >>VRBS: {str}")
+
+  def outf(self, str):
+    print(f"{str}")
+
+  def parse_args(self):
+    parser = ArgumentParser(prog = "gtclnr"
+                            , description="Cleanup git repository and show savings"
+                            , epilog="Most of methods are wrappers to git commands")
+    parser.add_argument('-d', '--debug', action='store_true', default=False, dest="debug"
+                        , help='Enable debug logs')
+    parser.add_argument('-v', '--verbose', action='store_true', default=False, dest="verbose"
+                        , help='Enable verbose logs')
+
+    parser.add_argument('-ngc', '--no-gt-clean', action='store_true', default = False, dest="nogtcln"
+                        , help="Do not execute shell script [gtclean]")
+    parsed = parser.parse_args()
+    return parsed
 
   def git_gc_prune(self, logf = None, num_days = 21):
     """
@@ -78,13 +109,17 @@ class gtclnr:
     result = 1
 
     # dont send logf, long-lived task has no feedback
-    stat = do_run(['time', 'gtclean'], None, show_cmd = False, show_result = True)
-    result = stat.returncode
-    
-    if result != 0:
-      tee_log(logf, "")
-      result = self.git_gc_prune(logf = logf, num_days = num_days)
-      result = self.git_repack(logf = logf)
+    if self.nogtcln:
+      self.dbg("Skipping gtclean")
+    else:
+      stat = do_run(['time', 'gtclean'], None, show_cmd = False, show_result = True)
+      result = stat.returncode
+
+      if result != 0:
+        tee_log(logf, "")
+    result = self.git_gc_prune(logf = logf, num_days = num_days)
+    result = self.git_repack(logf = logf)
+
     self.post_clean = self.get_gitroot_size(logf = logf)
     tee_log(logf, f"post-clean size={self.post_clean} KB")
 

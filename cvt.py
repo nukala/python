@@ -86,7 +86,7 @@ class Cvt:
         parser.add_argument('-fr', '--fr', '--paris', dest="paris"
                             , action='store_true', required=False, default=False
                             , help='Append Europe/Paris as the timezone')
-        parser.add_argument('--de', '--de', '--berlin', dest="berlin"
+        parser.add_argument('-de', '--de', '--berlin', dest="berlin"
                             , action='store_true', required=False, default=False
                             , help='Append Europe/Berlin as the timezone')
         parser.add_argument('--au', '--au', '--sydney', dest="sydney"
