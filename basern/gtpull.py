@@ -18,17 +18,29 @@ import gtclnr
 
 
 def get_tmp_dir(subdir = None):
-  dir = os.environ['HOME'] + os.sep + 'tmp'
+  home_dir = os.environ['HOME'] + os.sep + 'tmp'
   if subdir is not None:
-    dir += os.sep + subdir
+    home_dir += os.sep + subdir
 
-  os.makedirs(dir, exist_ok = True)
-  return dir
+  os.makedirs(home_dir, exist_ok = True)
+  return home_dir
+
+def fetch_forcibly(logf = None, verbose = False):
+  """
+  " Fetches tags forcibly
+  """
+  stat = do_run(["git", "fetch", "--all", "--force", "--multiple", "--tags"]
+                , logf, show_result = True, show_cmd = verbose)
+  tee_log(logf, f"{prog}: fetch={stat.returncode}, elapsed={round(time.time()-start, 2)} seconds",
+         do_print = False)
+
+  return stat.returncode
+
 
 def do_git_fetch(logf = None, verbose = False):
   """
   " Fetches from the repository, including tags, pruning delegated to clnr
-  """ 
+  """
   stat = do_run(['git', 'fetch', '--all', '--tags', '--prune', '--prune-tags' ], logf,
                 show_result = True, show_cmd = verbose)
   tee_log(logf, f"{prog}: fetch={stat.returncode}, elapsed={round(time.time()-start, 2)} seconds",
@@ -36,12 +48,9 @@ def do_git_fetch(logf = None, verbose = False):
 
   # if failure, ask to run fetch --force manually
   if stat.returncode != 0:
-    msg = "git fetch --all --force --multiple --tags"
-    do_run(f"echo {msg} | pbcopy", None, show_cmd = False, show_result = False)
-    tee_log(logf, f"{prog}: fetch tags failed. Manually run=\"{msg}\".", do_print = False)
-    sys.stderr.write(f"\t {msg} [ CMD+V ]\n")
+    return fetch_forcibly(logf, verbose)
 
-  return stat.returncode 
+  return stat.returncode
 
 
 def do_git_pull(logf):

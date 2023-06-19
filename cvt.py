@@ -64,7 +64,7 @@ class Cvt:
         'dddd MMMM DD YYYY hha z', #Tuesday, March 28th 2023 6am 8pm (CEST)
      ]
 
-    def parse_args(self):
+    def parse_args(self, args=None):
         parser = ArgumentParser(prog = 'cvt'
                                 , description='To convert strings into Pacific timezone equivalents'
                                 , epilog="START_STR is required")
@@ -89,10 +89,10 @@ class Cvt:
         parser.add_argument('-de', '--de', '--berlin', dest="berlin"
                             , action='store_true', required=False, default=False
                             , help='Append Europe/Berlin as the timezone')
-        parser.add_argument('--au', '--au', '--sydney', dest="sydney"
+        parser.add_argument('-au', '--au', '--sydney', dest="sydney"
                             , action='store_true', required=False, default=False
                             , help='Append Australia/Sydney as the timezone')
-        parsed = parser.parse_args()
+        parsed = parser.parse_args(args)
         #print(f"PARSED> {parsed}, from=[{parsed.start_str}], to=[{parsed.end_str}], "
         #      f"madrid={parsed.madrid}, debug={parsed.debug}, verbose={parsed.verbose}")
         return parsed
@@ -114,23 +114,23 @@ class Cvt:
             self.dbg(f"parsed=[{self.parsed}] no timezone {ret}")
         return ret
 
-    def __init__(self):
-        self.parsed = self.parse_args()
+    def __init__(self, arguments=None):
+        self.parsed = self.parse_args(arguments)
         self.debug = self.parsed.debug
         self.verbose = self.parsed.verbose
 
         if self.parsed.verbose == True:
             self.debug = True
 
-    def dbg(self, str):
+    def dbg(self, string):
         if self.debug:
-            print(f" >>dbg: {str}")
+            print(f" >>dbg: {string}")
         else:
             pass
 
-    def vrbs(self, str):
+    def vrbs(self, string):
         if self.verbose:
-            print(f" >>vrbs: {str}")
+            print(f" >>vrbs: {string}")
         else:
             pass
 
@@ -145,6 +145,7 @@ class Cvt:
             .replace(',', '').replace('.', '').replace('#', '') \
             .replace(' - ', ' ') \
             .replace('(', '').replace(')', '') \
+            .replace('horas', '') \
             .replace('AEST', 'Australia/Sydney').replace('AEDT', 'Australia/Sydney')\
             .replace("CEST", 'Europe/Berlin').replace("CET", 'Europe/Berlin') \
             .replace("BST", "Europe/London").replace("BDT", "Europe/London") \
@@ -174,7 +175,7 @@ class Cvt:
     def get_to(self):
         return self.parsed.end_str
 
-    def doParseDt(self, fmt, dt_str):
+    def do_parse_dt(self, fmt, dt_str):
         ret = None
         try:
             self.vrbs(f"Trying: str={dt_str}, and format={fmt}")
@@ -189,25 +190,25 @@ class Cvt:
 
         return ret
 
-    def parseDatetime(self, str):
-        if not self.is_datetime_string(str):
+    def parse_datetime(self, some_str):
+        if not self.is_datetime_string(some_str):
             return
 
-        dt_str = self._normalize(str)
+        dt_str = self._normalize(some_str)
         for fmt in self.fmts:
-            the_dt = self.doParseDt(fmt, dt_str)
+            the_dt = self.do_parse_dt(fmt, dt_str)
 
             if the_dt:
                 break
         return the_dt
 
     def show(self, dt_str):
-        dt = self.parseDatetime(dt_str)
+        dt = self.parse_datetime(dt_str)
         if not dt:
             tz = self.tz_name()
             if tz:
                 dt_str = f"{dt_str} {self.tz_name()}"
-                dt = self.parseDatetime(dt_str)
+                dt = self.parse_datetime(dt_str)
             if not dt:
                 return f"NOTHING for [{dt_str}], tz=[{tz}]"
 
@@ -218,7 +219,8 @@ class Cvt:
 
 
 if __name__ == "__main__":
-    cvt = Cvt()
+    args = None#["-es", "-f", "15/06/2023   23:30", "-t", "16/06/23   01:30 horas"]
+    cvt = Cvt(args)
     bgn = cvt.show(cvt.get_from())
     edn = None
     if cvt.get_to():
