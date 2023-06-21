@@ -62,6 +62,9 @@ class Cvt:
         'ddd DD MMMM HH:mm a z', #Sat 18th March 11:00 –11:59 PM AEDT
         'HH:mma ddd DD MMM z', # 10:00pm Sat 11th Mar (AEDT)
         'dddd MMMM DD YYYY hha z', #Tuesday, March 28th 2023 6am 8pm (CEST)
+        'MMMM DD YYYY h a z',  # June 27, 2023 5 am
+        'MMMM DD YYYY h:m a z', # June 27, 2023 5:00 am
+        'dddd MMMM DD h a z', #Sunday, June 25th 10 am
      ]
 
     def parse_args(self, args=None):
