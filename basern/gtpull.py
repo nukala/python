@@ -4,6 +4,7 @@
 from rnutils import *
 from yesno import yes_no
 from yesno import bool_yesno
+from getmtag import GetMtag
 
 import datetime
 import os
@@ -111,6 +112,18 @@ def show_gitlast_changes(root, logf = None):
 def git_path(root, path):
   return root + os.sep + path
 
+def copy_to_clipboard(name):
+  """
+  " Copies the specified name into clipboard in a OS independent fashion
+  """
+  mtag = GetMtag().to_string()
+  cmd = None
+  if mtag == "PC":
+    cmd = "clip"
+  elif mtag == "MacOS":
+    cmd = "pbcopy"
+  do_run(f"echo {name} | tr -d \"\n\" | {cmd}", None, show_cmd = False, show_result = False)
+
 
 def main(args):
   parser = argparse.ArgumentParser(
@@ -166,7 +179,7 @@ def main(args):
   elif yes_no(f'remove {logf.name} (y/n): ') == 0:
     os.remove(logf.name)
   else:
-    do_run(f"echo {logf.name} | tr -d \"\n\" | pbcopy", None, show_cmd = False, show_result = False)
+    copy_to_clipboard(logf.name)
 
   return ret
 

@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# coding: utf-8
+
 import os
 import platform
 import sys
@@ -12,6 +15,12 @@ print("platform_version: " + platform.version())
 print("python_version: " + ".".join(platform.python_version_tuple()[:2]))
 print("python_full_version: " + platform.python_version())
 
+print("")
+print("exec_prefix: " + sys.exec_prefix)
+print("base_exec_prefix: " + sys.base_exec_prefix)
+print("api_version: " + str(sys.api_version))
+print("version_info: " + str(sys.version_info))
+#print("winver: " + sys.winver)
 
 def format_full_version(info):
     version = "{0.major}.{0.minor}.{0.micro}".format(info)
