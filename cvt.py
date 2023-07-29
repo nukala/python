@@ -48,6 +48,7 @@ class Cvt:
         'DD/MM/YY HH:mm z', # 24/09/22 19:00 BST
         'DD-MM-YY HH:mm z',  # 01-06-23   21:00 Europe/Madrid
         'DD/MM/YYYY HH:mm z', # 24/09/2022 19:00 BST
+        'DD/MM/YYYY HH:mm a z', # 25/06/2023 09:00 AM
         'DD-MM-YYYY HH:mm z',  # 01-06-2023   21:00 Europe/Madrid
         'MMMM DD YYYY HH a z', # September 27 2022 5 am Europe/Berlin
         'MMM DD HH:mm z', # Sep 26, 16:53 AEST
