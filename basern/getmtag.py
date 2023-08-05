@@ -32,5 +32,6 @@ class GetMtag:
 
 if __name__ == "__main__":
   gm = GetMtag()
-  print(f"{gm.to_string()}")
+  # so = 12102749; to remove trailing \r
+  print(f"{gm.to_string()}", end = "")
 
