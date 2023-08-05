@@ -54,31 +54,31 @@ def do_git_fetch(logf = None, verbose = False):
   return stat.returncode
 
 
-def do_git_pull(logf):
+def do_git_pull(logf, debug = False, verbose = False):
   """
   Performs git pull
   If successful, asks and cleans up the logfile
   """
   #https://blog.sffc.xyz/post/185195398930/why-you-should-use-git-pull-ff-only
-  stat = do_run(['git', 'pull', '--no-commit', '--ff-only'], logf, show_result = False)
+  stat = do_run(['git', 'pull', '--no-commit', '--ff-only'], logf, show_cmd=debug, show_result=debug)
   tee_log(logf, f"{prog}: pull={stat.returncode}, elapsed={round(time.time()-start, 2)} seconds", do_print = False)
   #logf.close()
 
   if stat.returncode != 0:
-    #stat = do_run(['more', logf.name], logf, show_result = False, show_output = True)
+    #stat = do_run(['more', logf.name], logf, show_result = False, show_output = verbose)
     subprocess.run(['less', logf.name])
     print(f"see - {logf.name}")
   else:
     print(f"{os.linesep}")
-    do_run(['grep', 'file.* changed', logf.name], None, show_result = False)
-    do_run(['tail', '-5', logf.name], None, show_cmd = False, show_result = False)
+    do_run(['grep', '-e', 'file', '-e', 'changed', logf.name], None)
+    do_run(['tail', '-5', logf.name], None)
 
   return stat.returncode
 
 # echo "[$(l -s ~/tmp/git/gtpull-05190229.log | awk ' { print $1 } ')]" then
 #    > grep 'files changed' ~/tmp/git/gtpull-05190229.log
 
-def after_tasks(logf, idxTs, objTs, root, do_clean = False):
+def after_tasks(logf, idxTs, objTs, root, do_clean = False, verbose = False):
   if do_clean == False:
     #print(f"{prog}: after_tasks - returning because flag={do_clean}")
     return
@@ -112,7 +112,7 @@ def show_gitlast_changes(root, logf = None):
 def git_path(root, path):
   return root + os.sep + path
 
-def copy_to_clipboard(name):
+def copy_to_clipboard(name, debug = False, verbose = False):
   """
   " Copies the specified name into clipboard in a OS independent fashion
   """
@@ -122,7 +122,7 @@ def copy_to_clipboard(name):
     cmd = "clip"
   elif mtag == "MacOS":
     cmd = "pbcopy"
-  do_run(f"echo {name} | tr -d \"\n\" | {cmd}", None, show_cmd = False, show_result = False)
+  do_run(f"echo {name} | tr -d \"\n\" | {cmd}", None, show_cmd = debug, show_result = debug)
 
 
 def main(args):
@@ -162,7 +162,7 @@ def main(args):
 
   idxTs = mtime.modification_timestamp(git_path(root, 'index'))
   objTs = mtime.modification_timestamp(git_path(root, 'objects'))
-  do_git_fetch(logf, args.verbose)
+  do_git_fetch(logf, args.verbose > 0)
   ret = do_git_pull(logf)
   if ret == 0:
      # only upon success!
@@ -179,7 +179,7 @@ def main(args):
   elif yes_no(f'remove {logf.name} (y/n): ') == 0:
     os.remove(logf.name)
   else:
-    copy_to_clipboard(logf.name)
+    copy_to_clipboard(logf.name, debug=(args.verbose>1))
 
   return ret
 
