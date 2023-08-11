@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-from rnutils import *
-from yesno import yes_no
-from yesno import bool_yesno
 from getmtag import GetMtag
+from rnutils import *
+from yesno import bool_yesno
+from yesno import yes_no
 
-import datetime
-import os
-import sys
-import getopt
-import time
-import subprocess
 import argparse
-
-import mtime
+import datetime
+import getopt
 import gtclnr
+import mtime
+import os
+import subprocess
+import sys
+import time
 
 
 def get_tmp_dir(subdir = None):
@@ -87,12 +86,12 @@ def after_tasks(logf, idxTs, objTs, root, do_clean = False, verbose = False):
   wkago = datetime.datetime.now() - datetime.timedelta(days=7)
   result = 0
   # oldest < wkago.timestamp()
-  if (oldest < wkago.timestamp()) :
+  if oldest < wkago.timestamp():
     tee_log(logf, f"\noldest={datetime.datetime.fromtimestamp(oldest)} && wkago={wkago}")
 
     clnr = gtclnr.gtclnr(logf)
     clnr.show_preclean_size(logf)
-    if (clnr.shallow_clean(logf) == 0) :
+    if clnr.shallow_clean(logf) == 0:
       clnr.deep_clean(logf)
       clnr.show_savings(logf)
   else:
@@ -137,8 +136,8 @@ def main(args):
   parser.add_argument("-v", "--verbose", action = "count", default = 0
                       , help = "verbose, supports -vv for more verbose"
                       , dest = "verbose")
-  args = parser.parse_args();
-  do_clean = args.clean;
+  args = parser.parse_args()
+  do_clean = args.clean
   if args.verbose >= 1:
     print(f"{args}")
 

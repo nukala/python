@@ -7,13 +7,14 @@
 #
 # During this time RoyalMail (InterSoft) <type of service down or just say all services, e.g. International label generation> will be unavailable.
 #######################################################
-import sys
-import os
-import re
-from argparse import ArgumentParser
-import pendulum as pdl
 
+from argparse import ArgumentParser
 from distutils.util import  strtobool
+
+import os
+import pendulum as pdl
+import re
+import sys
 
 # pendulum.parse(str)
 # pendulum.from_format('Saturday July 23 11:05pm', 'dddd MMMM DD hh:mma')
@@ -66,6 +67,8 @@ class Cvt:
         'MMMM DD YYYY h a z',  # June 27, 2023 5 am
         'MMMM DD YYYY h:m a z', # June 27, 2023 5:00 am
         'dddd MMMM DD h a z', #Sunday, June 25th 10 am
+        'HHa z dddd DD MMMM YYYY', #10pm AEST Saturday 5 August 2023
+        'HH:mma z dddd DD MMMM YYYY', #10:01pm AEST Saturday 5 August 2023
      ]
 
     def parse_args(self, args=None):
@@ -184,7 +187,7 @@ class Cvt:
         try:
             self.vrbs(f"Trying: str={dt_str}, and format={fmt}")
             if len(fmt) == 0:
-                ret = pdl.parse(dt_str);
+                ret = pdl.parse(dt_str)
             else:
                 ret = pdl.from_format(dt_str, fmt)
             if ret:
@@ -199,6 +202,7 @@ class Cvt:
             return
 
         dt_str = self._normalize(some_str)
+        the_dt = None
         for fmt in self.fmts:
             the_dt = self.do_parse_dt(fmt, dt_str)
 
