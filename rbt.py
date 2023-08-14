@@ -16,15 +16,19 @@
     # for filename in args.files:
 #  cleanup (real) rbt?
 #######################################################
+
+from basern.yesno import bool_yesno
+from basern.rnutils import is_exists
 import sys
 import send2trash
-import os
 
 class Rbt:
     def __init__(self):
       pass
 
     def remove(self, fn):
+      if not is_exists(fn):
+        return False
       try:
         send2trash.send2trash(fn)
       except Exception as e:
@@ -35,7 +39,7 @@ class Rbt:
 if __name__ == "__main__":    
   rbt = Rbt()
   for arg in sys.argv[1:]:
-    print(f"rbt'ing {arg}")
-    rbt.remove(arg)
+    if rbt.remove(arg):
+      print(f"rbt'd {arg}")
 
   print("")

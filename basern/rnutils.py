@@ -1,4 +1,4 @@
-from yesno import bool_yesno
+from basern.yesno import bool_yesno
 
 import datetime
 import os
