@@ -180,6 +180,8 @@ def main(args):
   else:
     copy_to_clipboard(logf.name, debug=(args.verbose>1))
 
+  if args.verbose > 0:
+    print(f"main returning \"{ret}\".")
   return ret
 
 
@@ -196,4 +198,5 @@ start = time.time()
 prog = get_prog(__file__)
 
 if __name__ == "__main__":
-  sys.exit(main(sys.argv))
+  ret = main(sys.argv)
+  sys.exit(ret)
