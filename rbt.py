@@ -17,8 +17,10 @@
 #  cleanup (real) rbt?
 #######################################################
 
+from basern.getmtag import GetMtag
 from basern.yesno import bool_yesno
 from basern.rnutils import is_exists
+
 import sys
 import send2trash
 
@@ -33,13 +35,23 @@ class Rbt:
         send2trash.send2trash(fn)
       except Exception as e:
         print(f"{fn} encountered {str(e)}")
+        return False
       
       return True
+    
+    def show_success(self, fn):
+      mtag = GetMtag().to_string()
+      if mtag == "MacOS":
+        print(f"Trashed \"{fn}\"")
+      elif mtag == "PC":
+        print(f"Sent {fn} to \"Recycle Bin\"")
+      else: 
+        print(f"rbt'd {fn} for mtag={mtag}")
     
 if __name__ == "__main__":    
   rbt = Rbt()
   for arg in sys.argv[1:]:
     if rbt.remove(arg):
-      print(f"rbt'd {arg}")
+      rbt.show_success(arg)
 
   print("")
