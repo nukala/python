@@ -21,3 +21,7 @@ clean:
 	rm -rf $(shell /usr/local/bin/fd -e env -tf)
 	@echo ""
 	$(shell cd ./basern; make clean)
+
+# to add a new "requirement" 
+#  pip3 install --dry-run pyclip
+#  pip3 install --verbose pyclip
