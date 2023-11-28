@@ -69,6 +69,8 @@ class Cvt:
         'dddd MMMM DD h a z', #Sunday, June 25th 10 am
         'HHa z dddd DD MMMM YYYY', #10pm AEST Saturday 5 August 2023
         'HH:mma z dddd DD MMMM YYYY', #10:01pm AEST Saturday 5 August 2023
+        'MMMM DD YYYY hha', #November 2 2023 11am
+        'MMMM DD YYYY hh:mma',  # November 2 2023 11:30am
      ]
 
     def parse_args(self, args=None):
@@ -153,6 +155,7 @@ class Cvt:
             .replace(' - ', ' ') \
             .replace('(', '').replace(')', '') \
             .replace('horas', '') \
+            .replace('nd', '').replace(' from', '').replace(' until', '').replace(',', '') \
             .replace('AEST', 'Australia/Sydney').replace('AEDT', 'Australia/Sydney')\
             .replace("CEST", 'Europe/Berlin').replace("CET", 'Europe/Berlin') \
             .replace("BST", "Europe/London").replace("BDT", "Europe/London") \
