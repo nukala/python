@@ -8,6 +8,11 @@ import sys
 import uuid
 
 
+############################################################################
+# todos in this file
+#  send_to_clipboard and get_from_clip helper
+#  choose betweem sm and nr
+############################################################################
 
 class ToUUID:
 
