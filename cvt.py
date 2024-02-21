@@ -60,6 +60,7 @@ class Cvt:
         'ddd DD MMM hh:mma z', # Sat 15 Oct 09:00pm AEST
         'dddd DDMMYYYY HHa z', # 'Sunday, 05.02.2023 between 8am (CET)'
         'dddd DD MMMM hha z', # Saturday 18 February 6pm
+        'dddd DD MMMM YYYY HH:mm z',  # Saturday 3rd February 2024 00:01
         'DD MMMM HH:mm z', # 27th February -  20:00 (GMT)
         'ddd DD MMMM HH:mm a z', #Sat 18th March 11:00 –11:59 PM AEDT
         'HH:mma ddd DD MMM z', # 10:00pm Sat 11th Mar (AEDT)
@@ -73,7 +74,41 @@ class Cvt:
         'MMMM DD YYYY hh:mma',  # November 2 2023 11:30am
      ]
 
-    def parse_args(self, args=None):
+    def _normalize(self, some_str) :
+        # squeeze out spaces
+        dt_str = " ".join(some_str.split())
+
+        dt_str = re.sub('[aA][mM]', 'am', dt_str)
+        dt_str = re.sub('[pP][mM]', 'pm', dt_str)
+        # SOa/45497158
+        dt_str = re\
+            .compile(r'(?<=\d)(th|nd|rd|st)')\
+            .sub("", dt_str)
+        # self.dbg(f"regex [{some_str}] converted into [{dt_str}]")
+
+
+        # if 'AEST' in dtstr.capitalize():
+        # trim spaces by strip
+        # translate to remove punctuation
+        #   translate(str.maketrans('', '', string.punctuation)) REMOVES ':' not acceptable \
+        dt_str = dt_str \
+            .replace(',', '').replace('.', '').replace('#', '') \
+            .replace(' - ', ' ') \
+            .replace('(', '').replace(')', '') \
+            .replace('horas', '') \
+            .replace(' from', '').replace(' until', '').replace(',', '') \
+            .replace('AEST', 'Australia/Sydney').replace('AEDT', 'Australia/Sydney')\
+            .replace("CEST", 'Europe/Berlin').replace("CET", 'Europe/Berlin') \
+            .replace("BST", "Europe/London").replace("BDT", "Europe/London") \
+            .replace("europe", "Europe").replace("asia", "Asia").replace("america", "America") \
+            .strip().replace(' +', ' ')
+
+
+        self.dbg(f"[{some_str}] became [{dt_str}]")
+        return dt_str
+
+    @staticmethod
+    def parse_args(cli_args=None):
         parser = ArgumentParser(prog = 'cvt'
                                 , description='To convert strings into Pacific timezone equivalents'
                                 , epilog="START_STR is required")
@@ -101,7 +136,7 @@ class Cvt:
         parser.add_argument('-au', '--au', '--sydney', dest="sydney"
                             , action='store_true', required=False, default=False
                             , help='Append Australia/Sydney as the timezone')
-        parsed = parser.parse_args(args)
+        parsed = parser.parse_args(cli_args)
         #print(f"PARSED> {parsed}, from=[{parsed.start_str}], to=[{parsed.end_str}], "
         #      f"madrid={parsed.madrid}, debug={parsed.debug}, verbose={parsed.verbose}")
         return parsed
@@ -112,7 +147,7 @@ class Cvt:
         if self.parsed.madrid:
             ret = "Europe/Madrid"
         elif self.parsed.london:
-            ret = "Europe/Lodon"
+            ret = "Europe/London"
         elif self.parsed.paris:
             ret = "Europe/Paris"
         elif self.parsed.berlin:
@@ -142,36 +177,6 @@ class Cvt:
             print(f" >>vrbs: {string}")
         else:
             pass
-
-    def _normalize(self, some_str) :
-        # squeeze out spaces
-        dt_str = " ".join(some_str.split())
-        # if 'AEST' in dtstr.capitalize():
-        # trim spaces by strip
-        # translate to remove punctuation
-        #   translate(str.maketrans('', '', string.punctuation)) REMOVES ':' not acceptable \
-        dt_str = dt_str \
-            .replace(',', '').replace('.', '').replace('#', '') \
-            .replace(' - ', ' ') \
-            .replace('(', '').replace(')', '') \
-            .replace('horas', '') \
-            .replace('nd', '').replace(' from', '').replace(' until', '').replace(',', '') \
-            .replace('AEST', 'Australia/Sydney').replace('AEDT', 'Australia/Sydney')\
-            .replace("CEST", 'Europe/Berlin').replace("CET", 'Europe/Berlin') \
-            .replace("BST", "Europe/London").replace("BDT", "Europe/London") \
-            .replace("europe", "Europe").replace("asia", "Asia").replace("america", "America") \
-            .strip().replace(' +', ' ')
-
-
-        dt_str = re.sub('[aA][mM]', 'am', dt_str)
-        dt_str = re.sub('[pP][mM]', 'pm', dt_str)
-        # SOa/45497158
-        dt_str = re\
-            .compile(r'(?<=\d)(th|nd|rd|st)')\
-            .sub("", dt_str)
-
-        self.dbg(f"[{some_str}] became [{dt_str}]")
-        return dt_str
 
     @staticmethod
     def is_datetime_string(dt_str):
