@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+### MAY NOT WORK DUE TO MESSED UP IMPORTS
 from rnutils import *
 from ugtcln import check_ussh
 

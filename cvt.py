@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-#######################################################
-# Add support for --rmis and such to substitue the entire text if parsing succeed:
-# RoyalMail (InterSoft) will be performing maintenance on their <optional | api type, e.g. international> API from May 02 12:00 PM PDT to May 02 04:01 PM PDT.
-#
-# During this time RoyalMail (InterSoft) <type of service down or just say all services, e.g. International label generation> will be unavailable.
-#######################################################
+###############################################################################
+# way to convert timestamps into PxT values by trying a lot of variations
+###############################################################################
 
 from argparse import ArgumentParser
 from distutils.util import  strtobool
