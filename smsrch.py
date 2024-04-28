@@ -9,6 +9,10 @@ import uuid
 
 
 ############################################################################
+# Look up from new-relic using UUIDs with and without dashes.
+# Used extensively during one of my jobs as there was a lot of confusion
+#  around UUID formatting in logs/NR/Sumo etc
+#
 # todos in this file
 #  send_to_clipboard and get_from_clip helper
 #  choose betweem sm and nr
