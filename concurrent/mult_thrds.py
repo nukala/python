@@ -1,6 +1,5 @@
 import multiprocessing
-import time
-import thrd_utils
+import thrd_utils # type: ignore
 
 
 #

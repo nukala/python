@@ -1,5 +1,5 @@
 import threading 
-import thrd_utils
+import thrd_utils # type: ignore
 
 #
 # Sequential threads (non-mt) 
