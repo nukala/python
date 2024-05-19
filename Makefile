@@ -16,11 +16,12 @@ env: requirements.txt
 
 clean:
 	rm -rf __pycache__
-	rm -rf $(shell find . -name "*.pyc" -type f)
-	rm -rf $(shell find ./env -type f)
-	rm -rf $(shell /usr/local/bin/fd -e env -tf)
+	rm -rf $(shell fd -tf -e pyc)
+	rm -rf $(shell fd -tf ./env)
+	rm -rf $(shell fd -tf -e env)
 	@echo ""
 	$(shell cd ./basern; make clean)
+	$(shell cd ./concurrent; make clean)
 
 # to add a new "requirement" 
 #  pip3 install --dry-run pyclip
