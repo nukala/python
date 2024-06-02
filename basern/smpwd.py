@@ -11,7 +11,7 @@ To return a shorter version of pwd.
  if 2 return those two
  else return entire
 
-Works in C\: drive and many other folders.
+Works in C: drive and many other folders.
 """
 
 if __name__ == "__main__" :
