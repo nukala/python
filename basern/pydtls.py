@@ -4,6 +4,7 @@
 import os
 import platform
 import sys
+import sysconfig
 
 print("os_name: " + os.name)
 print("sys_platform: " + sys.platform)
@@ -20,7 +21,8 @@ print("exec_prefix: " + sys.exec_prefix)
 print("base_exec_prefix: " + sys.base_exec_prefix)
 print("api_version: " + str(sys.api_version))
 print("version_info: " + str(sys.version_info))
-#print("winver: " + sys.winver)
+print("winver: " + sys.winver)
+print(f"windows version: {sys.getwindowsversion()}")
 
 def format_full_version(info):
     version = "{0.major}.{0.minor}.{0.micro}".format(info)
@@ -39,3 +41,13 @@ else:
 
 print("implementation_name: " + implementation_name)
 print("implementation_version: " + implementation_version)
+
+print("")
+print(f"platlibdir: {sys.platlibdir}")
+print(f"plat.uname: {platform.uname()}")
+
+print("")
+print(f"LIBDIR: {sysconfig.get_config_var('LIBDIR')}")
+print(f"default scheme: {sysconfig.get_default_scheme()}")
+print(f"path_names: {sysconfig.get_path_names()}")
+print(f"platlib: {sysconfig.get_path('platlib')}")
