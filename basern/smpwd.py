@@ -12,6 +12,8 @@ To return a shorter version of pwd.
  else return entire
 
 Works in C: drive and many other folders.
+
+TODO: p3 C\:/data/ravi/home/mine/rnpydev/basern/smpwd.py  | sed 's/\//-/g' <<< with args and new-line
 """
 
 if __name__ == "__main__" :

@@ -20,3 +20,7 @@ class DtUtils:
 if __name__ == '__main__':
   du = DtUtils()
   print(f"{du}")
+  #min=datetime.datetime.today().minute + 5
+  #if min > 60:
+  #  min = min - 60;
+  #print(f"min={min}")
