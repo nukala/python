@@ -8,9 +8,7 @@
 ###############################################################################
 
 from argparse import ArgumentParser
-from glob import glob  
 
-import sys
 import hashlib
 import mmap
 
@@ -61,9 +59,9 @@ class md5:
 
     self.parsed, self.unknown_args = parser.parse_known_args(args)
 
-    if self.parsed.short and len(self.unknown_args) > 0:
+    if self.parsed.short and len(self.unknown_args) > 1:
       raise Exception(f"Short={self.parsed.short} and unknown_args{self.unknown_args}"
-                      ", len={len(self.unknown_args)} are not compatible")
+                      f".len={len(self.unknown_args)} are not compatible")
 
 
 ###### end of md5 class

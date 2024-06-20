@@ -241,18 +241,29 @@ def get_pwd(use_tilda = True):
 
   return pwd
 
-def short_pwd():
-  here = get_pwd(False)
-  a = os.getcwd().replace("\\", "/").split('/')
-  ret=here
+def short_pwd(size = 3, verbose = 0):
+  elems=os.getcwd().replace("\\", "/").split('/')
+  num = len(elems)
 
-  sz = len(a)
-  if sz >= 3:
-    ret = f"{a[sz-3]}/{a[sz-2]}/{a[sz-1]}"
-  elif sz == 2:
-    ret = f"{a[sz-2]}/{a[sz-1]}"
+  act_size = size
+  if size > num:
+    act_size = num
+  elif size <= 0:
+    act_size = 1
+  if verbose >= 1:
+    print(f"Requested size={size} is un-handleable. Changed to {act_size}")
 
-  #ret = f"{ret}.{sz}"
+  i = act_size
+  ret = ""
+  while i > 0:
+    if len(ret) == 0:
+      ret = f"{elems[num-i]}"
+    else:
+      ret = f"{ret}/{elems[num-i]}"
+    i = i - 1
+    if verbose >= 2:
+      print(f"After decrement i={i}, ret={ret}")
+
   return ret
 
 def get_prog(path):

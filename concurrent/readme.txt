@@ -1,3 +1,9 @@
+for Pip failures
+ launch a new bash
+ export PYTHONPATH=C\:/Users/ravi/scoop/apps/python/current/Lib/site-packages
+ pip whatever
+ exit
+
 Solve these also:
  https://www.dataquest.io/blog/multithreading-in-python/
 
