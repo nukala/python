@@ -25,6 +25,8 @@ if __name__ == "__main__":
                       , dest="verbose")
   parser.add_argument("-nl", "--new_line", action="store_true", dest="newline"
                       , help="terminate with a new line")
+  parser.add_argument("-p", "-sep", "--separator", type=str, dest="separator"
+                      , help="path element separator")
   parsed = parser.parse_args()
   if parsed.verbose >= 1:
     print(f"parsed arguments = {parsed}")
@@ -32,4 +34,4 @@ if __name__ == "__main__":
   end=''
   if parsed.newline:
     end = os.linesep
-  print(f"{short_pwd(parsed.num, parsed.verbose)}", end=end)
+  print(f"{short_pwd(parsed.num, parsed.separator, parsed.verbose)}", end=end)

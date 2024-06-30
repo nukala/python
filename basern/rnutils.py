@@ -241,7 +241,7 @@ def get_pwd(use_tilda = True):
 
   return pwd
 
-def short_pwd(size = 3, verbose = 0):
+def short_pwd(size = 3, separator = "/", verbose = 0):
   elems=os.getcwd().replace("\\", "/").split('/')
   num = len(elems)
 
@@ -251,7 +251,19 @@ def short_pwd(size = 3, verbose = 0):
   elif size <= 0:
     act_size = 1
   if verbose >= 1:
-    print(f"Requested size={size} is un-handleable. Changed to {act_size}")
+    print(f"Requested size={size} is un-handle able. Changed to {act_size}")
+
+  # if !separator:
+  #   if (verbose > 1):
+  #     print(f"Empty separator, using \"/\"")
+  #   separator="/"
+  # el
+  if separator == None:
+    if (verbose > 1):
+      print(f"Disallowed separator({separator}), using \"/\"")
+    separator="/"
+  if (verbose > 1):
+    print(f"using separator=[{separator}].{len(separator)}")
 
   i = act_size
   ret = ""
@@ -259,7 +271,7 @@ def short_pwd(size = 3, verbose = 0):
     if len(ret) == 0:
       ret = f"{elems[num-i]}"
     else:
-      ret = f"{ret}/{elems[num-i]}"
+      ret = f"{ret}{separator}{elems[num-i]}"
     i = i - 1
     if verbose >= 2:
       print(f"After decrement i={i}, ret={ret}")
