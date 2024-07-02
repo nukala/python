@@ -11,6 +11,7 @@ from argparse import ArgumentParser
 
 import hashlib
 import mmap
+import os
 
 class md5:
 
@@ -51,7 +52,9 @@ class md5:
     parser.add_argument('-v', '--verbose', action='store_true', default = False, dest = "verbose", 
                         help="Enable verbosity")
     parser.add_argument('-s', '--short', action='store_true', default = False, dest = "short",
-            help="Short output, no filename")
+            help="Short output, no filename, no CRLF or LF")
+    parser.add_argument("-nl", "--new_line", action="store_true", dest="newline",
+                        help="terminate with a new line")
     parser.add_argument('--mmap', "--memory_map", action='store_true', default = False, 
                         dest = "use_mmap", help="Use memory mapped files. DOES NOT WORK")
     parser.add_argument('--block', "--use_block", action='store_true', default = False, 
@@ -83,8 +86,11 @@ if __name__ == "__main__":
       else:
         the_hash = msum.process_inline(fname) 
 
-      if (msum.parsed.short):
-        print(f"{the_hash}")
+      end=""
+      if msum.parsed.newline:
+        end="\n"
+      if msum.parsed.short:
+        print(f"{the_hash}", end=f"{end}")
       else:
         print(f"{the_hash}\t{fname}")
     except (OSError, PermissionError) as e:
