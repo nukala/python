@@ -30,6 +30,7 @@ class Rbt:
 
     def remove(self, fn):
       if not is_exists(fn):
+        print(f" File \"{fn}\" does not exist?")
         return False
       try:
         send2trash.send2trash(fn)

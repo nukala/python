@@ -100,9 +100,9 @@ class gtclnr:
 
     return result
 
-  # missing cli-commands:
+  # missing cli-commands (gtclean):
   # gtOpt=-q
-  # git clean
+  # git clean (requires interactive shell ... do not use)
   # git branch --merged | grep -v -e \\* -e develop -e trunk -e master | xargs -n 1 git branch -dv
   #
   def deep_clean(self, logf = None, num_days = 21):
