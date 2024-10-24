@@ -104,6 +104,7 @@ class gtclnr:
   # gtOpt=-q
   # git clean (requires interactive shell ... do not use)
   # git branch --merged | grep -v -e \\* -e develop -e trunk -e master | xargs -n 1 git branch -dv
+  # git fetch -pv 2>&1 | grep -i -e feature\/
   #
   def deep_clean(self, logf = None, num_days = 21):
     result = 1
