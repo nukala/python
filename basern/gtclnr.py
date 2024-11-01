@@ -81,8 +81,7 @@ class gtclnr:
   
   def git_fetch_prune(self, logf = None):
     """
-    Performs - git fetch prune verbose --prune-tags removed
-    git fetch --prune --prune-tags --auto-gc
+    Performs - git fetch --prune --prune-tags --auto-gc
     """
     stat = do_run(['git', 'fetch', '--prune', '--prune-tags', '--auto-gc'], logf, show_cmd = False, show_result = True)
     #tee_log(logf, '\n')
@@ -104,7 +103,6 @@ class gtclnr:
   # gtOpt=-q
   # git clean (requires interactive shell ... do not use)
   # git branch --merged | grep -v -e \\* -e develop -e trunk -e master | xargs -n 1 git branch -dv
-  # git fetch -pv 2>&1 | grep -i -e feature\/
   #
   def deep_clean(self, logf = None, num_days = 21):
     result = 1
