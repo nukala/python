@@ -15,13 +15,15 @@ env: requirements.txt
 	python3 -m venv --without-pip --symlinks --system-site-packages env
 
 clean:
-	rm -rf __pycache__
-	rm -rf $(shell fd -tf -e pyc)
-	rm -rf $(shell fd -tf ./env)
-	rm -rf $(shell fd -tf -e env)
+	rm -rf $(shell fd -I -tf -e pyc)
+	rm -rf $(shell fd -I -tf ./env)
+	rm -rf $(shell fd -I -tf -e env)
+	rm -rf $(shell fd -I -td __pycache__ )
+#	rm -rf __pycache__
 	@echo ""
-	$(shell cd ./basern; make clean)
-	$(shell cd ./concurrent; make clean)
+#	$(shell cd ./basern; make clean)
+#	$(shell cd ./concurrent; make clean)
+#	$(shell cd ./class; make clean)
 
 # to add a new "requirement" 
 #  pip3 install --dry-run pyclip
