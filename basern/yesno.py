@@ -4,16 +4,18 @@
 import sys
 import os
 
+__debug=False
+
 def yes_no(prompt):
   pmpt = prompt
   if prompt == None:
     pmpt = "yes_or_no "
 
   try:
-    v = input(pmpt)
+    v = input(pmpt).upper()
     if len(v) <= 0:
       return 1
-    if v[0] == 'y' or v[0] == 'Y':
+    if v[0] == 'Y':
       return 0
     else:
       return 1
@@ -40,5 +42,6 @@ if __name__ == "__main__" :
     prompt = sys.argv[1]
 
   ans = yes_no(prompt)
-  #print(f"Answer = {ans}, 0 means YES")
+  if __debug:
+    print(f"Answer = {ans}, 0 means YES")
   sys.exit(ans)
