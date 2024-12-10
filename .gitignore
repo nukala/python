@@ -508,3 +508,5 @@ gradle-app.setting
 # JDT-specific (Eclipse Java Development Tools)
 
 # End of https://www.toptal.com/developers/gitignore/api/vim,jenv,xcode,maven,emacs,gradle,java,haskell,python,intellij+all,macos,windows,linux
+
+.ghsvd
