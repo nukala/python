@@ -1,4 +1,8 @@
 import os, time
+
+###
+# Parantheses, exponent, multiply, divide, add, subtract, left to right
+###
 print(f"{__file__} modified={time.ctime(os.path.getmtime(__file__))}\n")
 
 print("My age: " + str(12))
