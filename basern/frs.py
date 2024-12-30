@@ -4,76 +4,155 @@ from argparse import ArgumentParser
 #############################################
 # To calculate the total tax based on values seen in tables that show pct + min
 #
-# https://www.nerdwallet.com/article/taxes/california-state-tax
-# https://www.nerdwallet.com/article/taxes/federal-income-tax-brackets#2024-tax-brackets-(taxes-due-april-2025)
-#
 # Missing 401k contributions
 #
 #############################################
 
 
-class FtbIrs:
-  ftb = [
-    [4, 50999, 80490, 804.84],
-    [6, 80491, 111732, 1985.52],
-    [8, 111733, 141212, 3859.04],
-    [9.3, 141213, 721318, 6217.44]
-  ]
-  ftb_std = 11_080
-
-  irs = [
-    [12, 23201, 94300, 2320],
-    [22, 94301, 201050, 10852],
-    [24, 201051, 383900, 34337],
-    [32, 383901, 487450, 78221],
-    [35, 487451, 731200, 111357]
-  ]
-  irs_std = 29_200
-
-  def __init__(self):
-    self.parsed = None
-    self.unknown_args = None
-    self.verbose = False
-    self.use_std = False
-
-  def find_row(self, inc, ary):
+class FtbIrsUtils:
+  @staticmethod
+  def find_row(inc, ary, parsed):
     for i in ary:
-      min_amt = i[1]
-      max_amt = i[2]
+      min_amt = i[0]
+      max_amt = i[1]
 
       if min_amt <= inc <= max_amt:
-        if self.parsed.verbose:
-          print(f"  For ${inc} match={i}")
+        if parsed.verbose > 1:
+          print(f"   For ${inc} match={i}")
         return i
 
     return None
 
-  def calc_payment(self, inc, deduct, ary):
-    r = self.find_row(inc, ary)
+  @staticmethod
+  def calc_payment(inc, deduct, ary, parsed):
+    orig_inc = inc
+    if parsed.verbose > 2:
+      print(f"   inc={inc} will be reduced by {deduct}")
+    inc -= deduct
+    inc = max(inc, 0)
 
-    if r != None:
-      pass
-    else:
+    r = FtbIrsUtils.find_row(inc, ary, parsed)
+
+    if r is None:
+      if parsed.verbose > 1:
+        print(f"   nothing found for inc={inc}")
       return -1
 
-    over = (inc - r[1])
-    if self.use_std:
-      over -= deduct
-
-    threshold = r[3]
-    fraction = r[0]/100.0
+    over = (inc - r[0])
+    threshold = r[2]
+    fraction = r[3]/100.0
     payment = (fraction*over) + threshold
-    if self.parsed.verbose:
-      print(f"  inc={inc}, threshold={threshold}, fraction={fraction:.2f}, over={over}, payment={payment:.2f}")
+    if parsed.verbose > 2:
+      print(f"   inc={inc}, over={over}, threshold={threshold}, fraction={fraction:.4f}"
+            f", payment={payment:.2f}, orig_inc={orig_inc}\n")
     return payment
+
+
+# _nw due to nerdwallet
+class FtbIrsNW:
+  year = 2024
+  # https://www.nerdwallet.com/article/taxes/california-state-tax
+  ftb = [
+    [0, 21512, 0, 1],
+    [21513, 50998, 215.12, 2],
+    [50999, 80490, 804.84, 4],
+    [80491, 111732, 1985.52, 6],
+    [111733, 141212, 3859.04, 8],
+    [141213, 721318, 6217.44, 9.3]
+  ]
+  ftb_std = 11_080
+
+  # https://www.nerdwallet.com/article/taxes/federal-income-tax-brackets#2024-tax-brackets-(taxes-due-april-2025)
+  irs = [
+    [0, 23200, 0, 10],
+    [23201, 94300, 2320, 12],
+    [94301, 201050, 10852, 22],
+    [201051, 383900, 34337, 24],
+    [383901, 487450, 78221, 32],
+    [487451, 731200, 111357, 35]
+  ]
+  irs_std = 29_200
+  exempt_irs = 0
+  exempt_ftb = 288
+
+  def calc_irs(self, inc, parsed):
+    return FtbIrsUtils.calc_payment(inc, self.irs_std, self.irs, parsed)
+
+  def calc_ftb(self, inc, parsed):
+    return FtbIrsUtils.calc_payment(inc, self.ftb_std, self.ftb, parsed)
+
+
+class FtbIrs2025(FtbIrsNW):
+  def __init__(self):
+    super(FtbIrs2025, self)
+    self.year = 2025
+    self.irs = [
+      [0, 23_850, 10, 0],
+      [23_851, 96_950, 2385, 12],
+      [96_951, 206_700, 11_157, 22],
+      [206_701, 394_600, 35_302, 24],
+      [394_601, 501_050, 80_398, 32],
+      [501_051, 751_600, 114_462, 35],
+      [751_601, 99_999_999, 202_154.50, 37]
+    ]
+    self.irs_std = 29_200
+
+    # self.ftb = [
+    #   [],
+    # ]
+
+    self.ftb_std = 10_726
+    self.exempt_ftb = 298
+
+
+class FtbIrs2023(FtbIrsNW):
+  def __init__(self):
+    super(FtbIrs2023, self)
+    self.year = 2023
+    # https://www.irs.gov/media/166986 Schedule Y-1
+    self.irs = [
+      [0, 21_999, 0, 10],
+      [22_000,	89_450,	2_200.00, 12],
+      [89_450, 190_750, 10_294.00, 22],
+      [190_750, 364_200, 32_580.00, 24],
+      [364_200, 462_500, 74_208.00, 32],
+      [462_500, 693_750, 105_664.00, 35],
+      [693_750, 99_000_000, 186_601.50, 37]
+    ]
+    self.irs_std = 27_700
+
+    # https://www.ftb.ca.gov/forms/2023/2023-540-tax-rate-schedules.pdf Schedule Y
+    self.ftb = [
+      [0, 20_824, 0, 1],
+      [20_824, 49_368, 208.24, 2],
+      [49_368, 77_918, 779.12, 4],
+      [77_918, 108_162, 1_921.12, 6],
+      [108_162, 136_700, 3_735.76, 8],
+      [136_700, 698_274, 6_018.80, 9.3],
+      [698_274, 837_922,  58_245.18, 10.3],
+      [837_922, 1_396_542, 72_628.92, 11.3],
+      [1_396_542, 99_000_000,  135_752.98, 12.3]
+    ]
+    self.ftb_std = 10_726
+    self.exempt_ftb = 298
+
+
+class FrsApp:
+
+  def __init__(self):
+    self.frs = FtbIrsNW()
+    self.parsed = None
+    self.unknown_args = None
 
   def parse_args(self, args):
     parser = ArgumentParser(prog="frs",
                             description="To calculate taxes upon AGI (assumes standard-deduction, MFJ, lives in CA)")
-    parser.add_argument('-v', '--verbose', action='store_true', default=False, dest="verbose",
-                        help="Enable verbosity")
-    parser.add_argument('-std', '--std', '--standard', action='store_true', default=False, dest="use_std",
-                        help=f"Use standard deductions. fed={self.irs_std}, CA={self.ftb_std}")
+    parser.add_argument('-v', '--verbose', action='count', default=0, dest="verbose",
+                        help="Enable verbosity (more logging with -vv etc.)")
+    parser.add_argument('-23', '--2023', '--use_23', '--use_2023', action='store_true', default=False
+                        , dest="use_23", help=f"Use 2023 values")
+    parser.add_argument('-25', '--2025', '--use_25', '--use_2025', action='store_true', default=False
+                        , dest="use_25", help=f"Use 2025 values")
     self.parsed, self.unknown_args = parser.parse_known_args(args)
 
   def main(self, args):
@@ -81,30 +160,48 @@ class FtbIrs:
     if len(self.unknown_args) > 1:
       inc = int(self.unknown_args[1])
       if inc < 1000:
-        #was = inc
+        was = inc
         inc *= 1000
-        #print(f"Converted {was} into income of ${inc:.2f}")
+        if self.parsed.verbose > 0:
+          print(f"  Converted {was} into income of ${inc:.2f}")
     else:
       inc = int(input("Enter income: "))
 
-    fed = self.calc_payment(inc, self.irs_std, self.irs)
+    if self.parsed.use_23:
+      self.frs = FtbIrs2023()
+    elif self.parsed.use_25:
+      self.frs = FtbIrs2025()
+    if self.parsed.verbose > 2:
+      print(f"  using {self.frs.year} values std={self.frs.irs_std}/{self.frs.ftb_std}")
+
+    fed1 = FtbIrsUtils.calc_payment(inc, self.frs.irs_std, self.frs.irs, self.parsed)
+    fed = self.frs.calc_irs(inc, self.parsed)
+
     if fed < 0:
       print(f"Income of ${inc:.2f} is outside the scope of this tool (fed)")
       return 1
+    if fed1 != fed and self.parsed.verbose > 1:
+      print(f" from utils={fed1}, overloaded={fed}. Inconsistent results. Failing")
+      return -1
 
-    ca = self.calc_payment(inc, self.ftb_std, self.ftb)
+    ca_inc = inc - self.frs.exempt_ftb
+    ca1 = FtbIrsUtils.calc_payment(ca_inc, self.frs.ftb_std, self.frs.ftb, self.parsed)
+    ca = self.frs.calc_ftb(ca_inc, self.parsed)
     if ca < 0:
       print(f"Income of ${inc:.2f} is outside the scope of this tool (CA)")
       return 2
+    if ca1 != ca and self.parsed.verbose > 1:
+      print(f" CA from utils={ca1}, overloaded={ca}. Inconsistent results. Failing")
+      return -1
 
     fed_pct = (fed*100.0)/inc
     ca_pct = (ca*100.0)/inc
-    print(f"Your total payment = ${fed+ca:.2f} ({fed:.2f} + {ca:.2f}) ")
+    print(f"Your {self.frs.year} payment = ${fed+ca:.2f} ({fed:.2f} + {ca:.2f}) ")
     print(f"                        {(fed_pct + ca_pct):.2f}% ({fed_pct:.2f}% + {ca_pct:.2f}%)")
     return 0
 
 
 if __name__ == "__main__":
-  frs = FtbIrs()
+  app = FrsApp()
 
-  sys.exit(frs.main(sys.argv))
+  sys.exit(app.main(sys.argv))
