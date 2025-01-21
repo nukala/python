@@ -51,6 +51,11 @@ class FtbIrsUtils:
 # _nw due to nerdwallet
 class FtbIrsNW:
   year = 2024
+  irs_std = 29_200
+  exempt_irs = 0
+  ftb_std = 11_080
+  exempt_ftb = 288
+
   # https://www.nerdwallet.com/article/taxes/california-state-tax
   ftb = [
     [0, 21512, 0, 1],
@@ -60,7 +65,6 @@ class FtbIrsNW:
     [111733, 141212, 3859.04, 8],
     [141213, 721318, 6217.44, 9.3]
   ]
-  ftb_std = 11_080
 
   # https://www.nerdwallet.com/article/taxes/federal-income-tax-brackets#2024-tax-brackets-(taxes-due-april-2025)
   irs = [
@@ -71,21 +75,23 @@ class FtbIrsNW:
     [383901, 487450, 78221, 32],
     [487451, 731200, 111357, 35]
   ]
-  irs_std = 29_200
-  exempt_irs = 0
-  exempt_ftb = 288
 
   def calc_irs(self, inc, parsed):
-    return FtbIrsUtils.calc_payment(inc, self.irs_std, self.irs, parsed)
+    return FtbIrsUtils.calc_payment(inc - self.exempt_irs, self.irs_std, self.irs, parsed)
 
   def calc_ftb(self, inc, parsed):
-    return FtbIrsUtils.calc_payment(inc, self.ftb_std, self.ftb, parsed)
+    return FtbIrsUtils.calc_payment(inc - self.exempt_ftb, self.ftb_std, self.ftb, parsed)
 
 
 class FtbIrs2025(FtbIrsNW):
   def __init__(self):
     super(FtbIrs2025, self)
     self.year = 2025
+    self.irs_std = 29_200
+    self.ftb_std = 10_726
+    self.exempt_ftb = 298
+
+    #https://www.nerdwallet.com/article/taxes/federal-income-tax-brackets
     self.irs = [
       [0, 23_850, 10, 0],
       [23_851, 96_950, 2385, 12],
@@ -95,20 +101,20 @@ class FtbIrs2025(FtbIrsNW):
       [501_051, 751_600, 114_462, 35],
       [751_601, 99_999_999, 202_154.50, 37]
     ]
-    self.irs_std = 29_200
 
     # self.ftb = [
     #   [],
     # ]
-
-    self.ftb_std = 10_726
-    self.exempt_ftb = 298
 
 
 class FtbIrs2023(FtbIrsNW):
   def __init__(self):
     super(FtbIrs2023, self)
     self.year = 2023
+    self.irs_std = 27_700
+    self.ftb_std = 10_726
+    self.exempt_ftb = 298
+
     # https://www.irs.gov/media/166986 Schedule Y-1
     self.irs = [
       [0, 21_999, 0, 10],
@@ -119,7 +125,6 @@ class FtbIrs2023(FtbIrsNW):
       [462_500, 693_750, 105_664.00, 35],
       [693_750, 99_000_000, 186_601.50, 37]
     ]
-    self.irs_std = 27_700
 
     # https://www.ftb.ca.gov/forms/2023/2023-540-tax-rate-schedules.pdf Schedule Y
     self.ftb = [
@@ -133,14 +138,12 @@ class FtbIrs2023(FtbIrsNW):
       [837_922, 1_396_542, 72_628.92, 11.3],
       [1_396_542, 99_000_000,  135_752.98, 12.3]
     ]
-    self.ftb_std = 10_726
-    self.exempt_ftb = 298
 
 
 class FrsApp:
 
   def __init__(self):
-    self.frs = FtbIrsNW()
+    self.frs = FtbIrs2025()
     self.parsed = None
     self.unknown_args = None
 
@@ -151,8 +154,8 @@ class FrsApp:
                         help="Enable verbosity (more logging with -vv etc.)")
     parser.add_argument('-23', '--2023', '--use_23', '--use_2023', action='store_true', default=False
                         , dest="use_23", help=f"Use 2023 values")
-    parser.add_argument('-25', '--2025', '--use_25', '--use_2025', action='store_true', default=False
-                        , dest="use_25", help=f"Use 2025 values")
+    parser.add_argument('-24', '--2024', '--use_24', '--use_2024', action='store_true', default=False
+                        , dest="use_24", help=f"Use 2024 values")
     self.parsed, self.unknown_args = parser.parse_known_args(args)
 
   def main(self, args):
@@ -169,30 +172,32 @@ class FrsApp:
 
     if self.parsed.use_23:
       self.frs = FtbIrs2023()
-    elif self.parsed.use_25:
-      self.frs = FtbIrs2025()
+    elif self.parsed.use_24:
+      self.frs = FtbIrsNW()
     if self.parsed.verbose > 2:
       print(f"  using {self.frs.year} values std={self.frs.irs_std}/{self.frs.ftb_std}")
 
-    fed1 = FtbIrsUtils.calc_payment(inc, self.frs.irs_std, self.frs.irs, self.parsed)
+    if self.parsed.verbose > 3:
+      print(f"  parsed={str(self.parsed)}\n")
+
+    # fed1 = FtbIrsUtils.calc_payment(inc, self.frs.irs_std, self.frs.irs, self.parsed)
     fed = self.frs.calc_irs(inc, self.parsed)
 
     if fed < 0:
       print(f"Income of ${inc:.2f} is outside the scope of this tool (fed)")
       return 1
-    if fed1 != fed and self.parsed.verbose > 1:
-      print(f" from utils={fed1}, overloaded={fed}. Inconsistent results. Failing")
-      return -1
+    # if fed1 != fed and self.parsed.verbose > 1:
+    #   print(f" from utils={fed1}, overloaded={fed}. Inconsistent results. Failing")
+    #   return -1
 
-    ca_inc = inc - self.frs.exempt_ftb
-    ca1 = FtbIrsUtils.calc_payment(ca_inc, self.frs.ftb_std, self.frs.ftb, self.parsed)
-    ca = self.frs.calc_ftb(ca_inc, self.parsed)
+    # ca1 = FtbIrsUtils.calc_payment(ca_inc, self.frs.ftb_std, self.frs.ftb, self.parsed)
+    ca = self.frs.calc_ftb(inc, self.parsed)
     if ca < 0:
       print(f"Income of ${inc:.2f} is outside the scope of this tool (CA)")
       return 2
-    if ca1 != ca and self.parsed.verbose > 1:
-      print(f" CA from utils={ca1}, overloaded={ca}. Inconsistent results. Failing")
-      return -1
+    # if ca1 != ca and self.parsed.verbose > 1:
+    #   print(f" CA from utils={ca1}, overloaded={ca}. Inconsistent results. Failing")
+    #   return -1
 
     fed_pct = (fed*100.0)/inc
     ca_pct = (ca*100.0)/inc
