@@ -180,24 +180,16 @@ class FrsApp:
     if self.parsed.verbose > 3:
       print(f"  parsed={str(self.parsed)}\n")
 
-    # fed1 = FtbIrsUtils.calc_payment(inc, self.frs.irs_std, self.frs.irs, self.parsed)
     fed = self.frs.calc_irs(inc, self.parsed)
 
     if fed < 0:
       print(f"Income of ${inc:.2f} is outside the scope of this tool (fed)")
       return 1
-    # if fed1 != fed and self.parsed.verbose > 1:
-    #   print(f" from utils={fed1}, overloaded={fed}. Inconsistent results. Failing")
-    #   return -1
 
-    # ca1 = FtbIrsUtils.calc_payment(ca_inc, self.frs.ftb_std, self.frs.ftb, self.parsed)
     ca = self.frs.calc_ftb(inc, self.parsed)
     if ca < 0:
       print(f"Income of ${inc:.2f} is outside the scope of this tool (CA)")
       return 2
-    # if ca1 != ca and self.parsed.verbose > 1:
-    #   print(f" CA from utils={ca1}, overloaded={ca}. Inconsistent results. Failing")
-    #   return -1
 
     fed_pct = (fed*100.0)/inc
     ca_pct = (ca*100.0)/inc

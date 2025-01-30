@@ -11,12 +11,13 @@ from argparse import ArgumentParser
 
 import hashlib
 import mmap
-import os
 
-class md5:
+class Md5:
 
   def __init__(self):
     self.BLOCK_SZ = 8192
+    self.parsed = None
+    self.unknown_args = None
 
   def process_block(self, fname):
     hasher = hashlib.md5()
@@ -41,7 +42,17 @@ class md5:
     return hasher.hexdigest()
 
   def process_inline(self, fname):
-    with open(fname, "rb") as ff:
+    if self.parsed.verbose:
+      print(f"fname=[{fname}]")
+    adjusted = fname
+    if fname.startswith("/cygdrive/c/"):
+      adjusted = fname.replace("/cygdrive/c/", "C:\\")
+    elif fname.startswith("/c/"):
+      adjusted = fname.replace("/c/", "C:\\")
+    if self.parsed.verbose:
+      print(f"adjusted file=[{adjusted}]")
+
+    with open(adjusted, "rb") as ff:
       digest = hashlib.file_digest(ff, "md5")
     
     return digest.hexdigest()
@@ -71,7 +82,7 @@ class md5:
 
 if __name__ == "__main__":
   # fname = sys.argv[1]
-  msum = md5()
+  msum = Md5()
 
   msum.parse_args()
 
