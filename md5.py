@@ -11,6 +11,10 @@ from argparse import ArgumentParser
 
 import hashlib
 import mmap
+import pathlib
+import platform
+from fileinput import filename
+
 
 class Md5:
 
@@ -41,16 +45,37 @@ class Md5:
 	
     return hasher.hexdigest()
 
-  def process_inline(self, fname):
-    if self.parsed.verbose:
-      print(f"fname=[{fname}]")
-    adjusted = fname
-    if fname.startswith("/cygdrive/c/"):
-      adjusted = fname.replace("/cygdrive/c/", "C:\\")
-    elif fname.startswith("/c/"):
-      adjusted = fname.replace("/c/", "C:\\")
-    if self.parsed.verbose:
-      print(f"adjusted file=[{adjusted}]")
+  @staticmethod
+  def adjust_winpath(file_name, verbose = 0):
+    adjusted = file_name
+
+    done = False
+    for pfx in [ 'cygdrive', 'mnt', '' ]:
+      for dr in  [ 'c', 'd', 'm', 'f' ]:
+        if len(pfx) == 0:
+          old = f"/{dr.lower()}/"
+        else:
+          old = f"/{pfx.lower()}/{dr.lower()}/"
+
+        if verbose > 1:
+          print(f"pfx={pfx} and old={old}")
+        if file_name.startswith(f"{old}"):
+          adjusted = file_name.replace(f'{old}', f"{dr.upper()}:\\")
+          if verbose > 0:
+            print(f"{old}: became [{adjusted}]")
+          done = True
+          break
+      if done:
+        break
+
+    return adjusted
+
+  def process_inline(self, file_name):
+    if self.parsed.verbose > 0:
+      print(f"Input filename=[{file_name}]")
+    adjusted = file_name
+    if platform.system() == 'Windows':
+      adjusted = self.adjust_winpath(file_name, self.parsed.verbose)
 
     with open(adjusted, "rb") as ff:
       digest = hashlib.file_digest(ff, "md5")
@@ -60,8 +85,8 @@ class Md5:
   def parse_args(self, args=None):
     parser = ArgumentParser(prog = 'md5',
                             description="To generate md5 sum of specified files in a platform agnostic way.")
-    parser.add_argument('-v', '--verbose', action='store_true', default = False, dest = "verbose", 
-                        help="Enable verbosity")
+    parser.add_argument('-v', '--verbose', action = 'count', default = 0, dest = "verbose",
+                        help = "Enable verbosity")
     parser.add_argument('-s', '--short', action='store_true', default = False, dest = "short",
             help="Short output, no filename, no CRLF or LF")
     parser.add_argument("-nl", "--new_line", action="store_true", dest="newline",
@@ -106,4 +131,4 @@ if __name__ == "__main__":
         print(f"{the_hash}\t{fname}")
     except (OSError, PermissionError) as e:
       print(f"{e}")
-      pass;
+      pass
