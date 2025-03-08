@@ -218,15 +218,21 @@ def do_run(cmd, logf, inpt=None, special_env=None, show_cmd=False, show_result=T
   try:
     # THERE SHOULD BE A BETTER WAY
     if logf is not None:
-      stat=subprocess.run(cmd, stdout=logf, stderr=logf, text=True, input=inpt, env=env, shell=useShell)
+      stat=subprocess.run(cmd, stdout=logf, stderr=logf, text=True, input=inpt, env=env, close_fds=True, shell=useShell)
     else:
-      stat=subprocess.run(cmd, text=True, input=inpt, env=env, shell=useShell)
+      stat=subprocess.run(cmd, text=True, input=inpt, env=env, close_fds=True, shell=useShell)
   except (FileNotFoundError) as e:
     tee_log(logf, f"{cmdStr} failed: {e}")
     stat=subprocess.CalledProcessError(252, cmd)
 
   if show_result == True:
     tee_log(logf, f"do_run: Command=[{cmdStr}], ret={stat.returncode}")
+
+  # https://stackoverflow.com/questions/66763957 for why yes_no fails after this call!
+  # https://docs.python.org/3/library/subprocess.html
+  # stat = close(in_write_pipe_fd) 
+  # if stat != None:
+  #   print(f"close(in_write_pipe_fd) failed={stat}")
 
   return stat
 
