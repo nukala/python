@@ -230,6 +230,7 @@ def do_run(cmd, logf, inpt=None, special_env=None, show_cmd=False, show_result=T
 
   # https://stackoverflow.com/questions/66763957 for why yes_no fails after this call!
   # https://docs.python.org/3/library/subprocess.html
+  #  macos is OK, win10 both bash and dos fail inside cmder as well cmd
   # stat = close(in_write_pipe_fd) 
   # if stat != None:
   #   print(f"close(in_write_pipe_fd) failed={stat}")

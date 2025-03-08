@@ -21,7 +21,11 @@ print("exec_prefix: " + sys.exec_prefix)
 print("base_exec_prefix: " + sys.base_exec_prefix)
 print("api_version: " + str(sys.api_version))
 print("version_info: " + str(sys.version_info))
-print(f"home: {os.environ["HOME"]}")
+if os.environ.get("HOME") is not None: 
+  print(f"home: {os.environ["HOME"]}")
+elif os.environ.get("USERPROFILE") is not None: 
+  print(f"userprofile: {os.environ["USERPROFILE"]}")
+
 print(f"system: {platform.system()}")
 if platform.system() == 'Windows':
   print("winver: " + sys.winver)
