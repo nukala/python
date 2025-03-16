@@ -102,9 +102,16 @@ class FtbIrs2025(FtbIrsNW):
       [751_601, 99_999_999, 202_154.50, 37]
     ]
 
-    # self.ftb = [
-    #   [],
-    # ]
+    # https://blog.turbotax.intuit.com/income-tax-by-state/california-105369 && inp && brak_ary
+    self.ftb = [
+      [ 0, 21_512, 0.00, 1.0 ],
+      [ 21_513, 50_998, 215.12, 2.0 ],
+      [ 50_999, 80_490, 804.82, 4.0 ],
+      [ 80_491, 111_732, 1_984.46, 6.0 ],
+      [ 111_733, 141_212, 3_858.92, 8.0 ],
+      [ 141_213, 721_318, 6_217.24, 9.3 ],
+      [ 721_319, 865_574, 60_167.01, 10.3 ],
+    ]
 
 
 class FtbIrs2023(FtbIrsNW):
@@ -161,7 +168,8 @@ class FrsApp:
   def main(self, args):
     self.parse_args(args)
     if len(self.unknown_args) > 1:
-      inc = int(self.unknown_args[1])
+      ua = self.unknown_args[1].replace('K', 'k').replace('k', '')
+      inc = int(ua)
       if inc < 1000:
         was = inc
         inc *= 1000
@@ -193,7 +201,7 @@ class FrsApp:
 
     fed_pct = (fed*100.0)/inc
     ca_pct = (ca*100.0)/inc
-    print(f"Your {self.frs.year} payment = ${fed+ca:.2f} ({fed:.2f} + {ca:.2f}) ")
+    print(f"Your {self.frs.year} payment = ${fed+ca:,.2f} ({fed:,.2f} + {ca:,.2f}) ")
     print(f"                        {(fed_pct + ca_pct):.2f}% ({fed_pct:.2f}% + {ca_pct:.2f}%)")
     return 0
 

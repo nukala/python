@@ -1,6 +1,8 @@
 # To help with unit testing also allow for import
 
 def fact(n):
+  if n == 0:
+    return 0
   return 1 if n == 1 else n * fact(n-1)
 
 
