@@ -1,3 +1,4 @@
+import os
 import sys
 from argparse import ArgumentParser
 
@@ -91,7 +92,7 @@ class FtbIrs2025(FtbIrsNW):
     self.ftb_std = 10_726
     self.exempt_ftb = 298
 
-    #https://www.nerdwallet.com/article/taxes/federal-income-tax-brackets
+    # https://www.nerdwallet.com/article/taxes/federal-income-tax-brackets
     self.irs = [
       [0, 23_850, 10, 0],
       [23_851, 96_950, 2385, 12],
@@ -103,15 +104,16 @@ class FtbIrs2025(FtbIrsNW):
     ]
 
     # https://blog.turbotax.intuit.com/income-tax-by-state/california-105369 && inp && brak_ary
-    self.ftb = [
-      [ 0, 21_512, 0.00, 1.0 ],
-      [ 21_513, 50_998, 215.12, 2.0 ],
-      [ 50_999, 80_490, 804.82, 4.0 ],
-      [ 80_491, 111_732, 1_984.46, 6.0 ],
-      [ 111_733, 141_212, 3_858.92, 8.0 ],
-      [ 141_213, 721_318, 6_217.24, 9.3 ],
-      [ 721_319, 865_574, 60_167.01, 10.3 ],
-    ]
+    self.ftb =  [
+    [0, 21_512, 0.00, 1.0],
+    [21_513, 50_998, 215.12, 2.0],
+    [50_999, 80_490, 804.82, 4.0],
+    [80_491, 111_732, 1_984.46, 6.0],
+    [111_733, 141_212, 3_858.92, 8.0],
+    [141_213, 721_318, 6_217.24, 9.3],
+    [721_319, 865_574, 60_167.01, 10.3],
+    [865_575, 1_442_628, 75_025.27, 11.3],
+ ]
 
 
 class FtbIrs2023(FtbIrsNW):
@@ -205,8 +207,15 @@ class FrsApp:
     print(f"                        {(fed_pct + ca_pct):.2f}% ({fed_pct:.2f}% + {ca_pct:.2f}%)")
     return 0
 
+@staticmethod
+def activate_venv():
+  # try venv, env, myenv
+  envdir=os.path.join(os.path.dirname(__file__), "venv")
+  print(f"venv={envdir}.exists={os.path.isdir(envdir)}")
+  pass
 
 if __name__ == "__main__":
+  activate_venv()
   app = FrsApp()
 
   sys.exit(app.main(sys.argv))
