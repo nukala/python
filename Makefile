@@ -10,19 +10,24 @@ init:
 
 mkreq: 
 	pip3 freeze --local > requirements.txt
+	pip3 freeze --verbose --all >> requirements.txt
+	@echo " NOTE-PRE-COMMIT> Remove pip/pywin32 not-cross-platform deps manually"
 
 ## pip25 requires local installation?
 venv: requirements.txt
 	python3 -m venv --symlinks --system-site-packages venv
 #	python3 -m venv --symlinks --system-site-packages venv --clear --without-pip 
 
-clean:
-	rm -rf $(shell fd -I -tf -e pyc)
-#	@echo "pyc done"
+deep-clean: clean
 	rm -rf ./env
 	rm -rf ./venv
 #	@echo "no-dir done"
-	rm -rf $(shell fd -I -td __pycache__ )
+
+# -I cleans up virtual env also
+clean:
+	rm -rf $(shell fd -tf -e pyc)
+#	@echo "pyc done"
+	rm -rf $(shell fd -td __pycache__ )
 #	rm -rf __pycache__
 	@echo ""
 #	$(shell cd ./basern; make clean)
