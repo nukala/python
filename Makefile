@@ -11,13 +11,17 @@ init:
 mkreq: 
 	pip3 freeze --local > requirements.txt
 
-env: requirements.txt
-	python3 -m venv --without-pip --symlinks --system-site-packages env
+## pip25 requires local installation?
+venv: requirements.txt
+	python3 -m venv --symlinks --system-site-packages venv
+#	python3 -m venv --symlinks --system-site-packages venv --clear --without-pip 
 
 clean:
 	rm -rf $(shell fd -I -tf -e pyc)
-	rm -rf $(shell fd -I -tf ./env)
-	rm -rf $(shell fd -I -tf -e env)
+#	@echo "pyc done"
+	rm -rf ./env
+	rm -rf ./venv
+#	@echo "no-dir done"
 	rm -rf $(shell fd -I -td __pycache__ )
 #	rm -rf __pycache__
 	@echo ""
