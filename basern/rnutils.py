@@ -261,40 +261,54 @@ def get_pwd(use_tilda=True):
   return pwd
 
 
-def short_pwd(size=3, separator="/", verbose=0):
-  elems=os.getcwd().replace("\\", "/").split('/')
+def short_pwd(num_dirs=3, separator="/", verbose=0, reversed = False):
+  pfx="dbg> "
+  pwd=os.getcwd().replace("\\", "/").replace("C:", "").replace("F:", "")
+  elems=pwd.split('/')
   num=len(elems)
 
-  act_size=size
-  if size > num:
+  act_size=num_dirs
+  if num_dirs > num:
     act_size=num
-  elif size <= 0:
+  elif num_dirs <= 0:
     act_size=1
   if verbose >= 1:
-    print(f"Requested size={size} is un-handle able. Changed to {act_size}")
+    print(f"{pfx}Requested size={num_dirs} is un-handle able. Changed to {act_size}")
 
-  # if !separator:
-  #   if (verbose > 1):
-  #     print(f"Empty separator, using \"/\"")
-  #   separator="/"
-  # el
-  if separator == None:
-    if (verbose > 1):
-      print(f"Disallowed separator({separator}), using \"/\"")
+  if separator is None:
+    if verbose > 1:
+      print(f"{pfx}Disallowed separator({separator}), using \"/\"")
     separator="/"
-  if (verbose > 1):
-    print(f"using separator=[{separator}].{len(separator)}")
+  if verbose > 1:
+    print(f"{pfx}using separator=[{separator}].{len(separator)}")
 
   i=act_size
   ret=""
   while i > 0:
+    nxt=num-i
     if len(ret) == 0:
-      ret=f"{elems[num-i]}"
+      ret=f"{elems[nxt]}"
     else:
-      ret=f"{ret}{separator}{elems[num-i]}"
-    i=i - 1
+      ret+=f"{separator}{elems[nxt]}"
+    i=i-1
+
     if verbose >= 2:
-      print(f"After decrement i={i}, ret={ret}")
+      print(f"{pfx}After decrement nxt={nxt} i={i}, ret={ret}")
+
+  if reversed:
+    ary=ret.split(separator)
+    a=len(ary)-1
+    rev_ret=""
+    while a >= 0:
+      if len(rev_ret) == 0:
+        rev_ret=f"{ary[a]}"
+      else:
+        rev_ret += f"{separator}{ary[a]}"
+
+      a=a-1
+      if verbose >= 2:
+        print(f"{pfx}a={a}, rev_ret={rev_ret}")
+    ret = rev_ret
 
   return ret
 

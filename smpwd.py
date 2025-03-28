@@ -14,7 +14,7 @@ from argparse import ArgumentParser
 #
 #Works in C: drive and many other folders.
 #
-#TODO: p3 C\:/data/ravi/home/mine/rnpydev/basern/smpwd.py  | sed 's/\//-/g' <<< with args and new-line
+
 
 if __name__ == "__main__":
   parser = ArgumentParser(prog='smpwd', description='return a FS-separated pwd of specified elements')
@@ -27,6 +27,8 @@ if __name__ == "__main__":
                       , help="terminate with a new line")
   parser.add_argument("-p", "-sep", "--separator", type=str, dest="separator"
                       , help="path element separator")
+  parser.add_argument("-r", "--reversed", action="store_true", dest="reversed"
+                      , help="Reverse the folder names .../x/y/z becomes z/y/x/...")
   parsed = parser.parse_args()
   if parsed.verbose >= 1:
     print(f"parsed arguments = {parsed}")
@@ -34,4 +36,4 @@ if __name__ == "__main__":
   end=''
   if parsed.newline:
     end = os.linesep
-  print(f"{short_pwd(parsed.num, parsed.separator, parsed.verbose)}", end=end)
+  print(f"{short_pwd(parsed.num, parsed.separator, parsed.verbose, parsed.reversed)}", end=end)
