@@ -13,7 +13,7 @@ from argparse import ArgumentParser
 # else return entire
 #
 #Works in C: drive and many other folders.
-#
+# To help test:  mkdir -p a/b/c/d/e/f/g/h/i/j/k/l/m/n/op/q/r/s/t/u/v/w/x/y/z
 
 
 if __name__ == "__main__":

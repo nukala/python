@@ -11,9 +11,7 @@ from argparse import ArgumentParser
 
 import hashlib
 import mmap
-import pathlib
 import platform
-from fileinput import filename
 
 
 class Md5:

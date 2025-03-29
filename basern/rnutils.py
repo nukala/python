@@ -5,6 +5,7 @@ import os
 import subprocess
 import time
 
+
 ######################
 # Bunch of utility methods. Some may be excessive - this being python.
 # Almost rehash of similarly named java-equivalent
@@ -39,305 +40,296 @@ def is_exists(filename):
 
 
 def duks(dir=".", logf=None, show_result=False, show_output=False):
-  duks=getoutput_from_run(['du', '-ks', f"{dir}"], logf, show_result= show_result, show_output=show_output)
-  sz=int(duks['stdout'].split()[0])
-  return sz
+    duks = getoutput_from_run(['du', '-ks', f"{dir}"], logf, show_result=show_result, show_output=show_output)
+    sz = int(duks['stdout'].split()[0])
+    return sz
 
 
 def rename(fn, renamed):
-  stat=subprocess.run(["mv", fn, renamed], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
-  if stat.returncode == 0:
-    return True
-  else:
-    return False
+    stat = subprocess.run(["mv", fn, renamed], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+    if stat.returncode == 0:
+        return True
+    else:
+        return False
 
 
 def get_next_logname(fname):
-  """
-  Tries a few times to find a ## suffixed log that does not exist.
-  if nothing is found, return the original requested filename
-  """
-  basefn=befsub(fname, ".")
+    """
+    Tries a few times to find a ## suffixed log that does not exist.
+    if nothing is found, return the original requested filename
+    """
+    basefn = befsub(fname, ".")
 
-  ## see if we can send the un-numbered log
-  lfn=f"{basefn}.log"
-  if is_exists(lfn) == False:
-    return lfn
-  elif os.stat(lfn).st_size == 0:
-    return lfn
-
-  for i in range(1, 29):
-    lfn=f"{basefn}{i}.log"
-    if is_exists(lfn):
-      #print(f"counter={i}")
-      if os.stat(lfn).st_size == 0:
+    ## see if we can send the un-numbered log
+    lfn = f"{basefn}.log"
+    if is_exists(lfn) == False:
         return lfn
-      else:
-        continue
-    else:
-      return lfn
+    elif os.stat(lfn).st_size == 0:
+        return lfn
 
-  return fname
+    for i in range(1, 29):
+        lfn = f"{basefn}{i}.log"
+        if is_exists(lfn):
+            # print(f"counter={i}")
+            if os.stat(lfn).st_size == 0:
+                return lfn
+            else:
+                continue
+        else:
+            return lfn
+
+    return fname
 
 
 def contains(line, part):
-  try:
-    dex=line.find(part)
-    return dex >= 0
-  except TypeError:
-    return False
+    try:
+        dex = line.find(part)
+        return dex >= 0
+    except TypeError:
+        return False
 
 
 # substringBeforeFirst
 def befsub(str, sep):
-  try:
-    dex=str.index(sep)
+    try:
+        dex = str.index(sep)
 
-    if dex > 0:
-      return str[:dex]
-    else:
-      return str
-  except ValueError:
-    return str
+        if dex > 0:
+            return str[:dex]
+        else:
+            return str
+    except ValueError:
+        return str
 
 
 def get_long_filename(prefix, suffix="log"):
-  now=datetime.datetime.today()
-  # https://strftime.org/
-  return f"{prefix}-{now.strftime('%m%d%I%M')}.{suffix}"
+    now = datetime.datetime.today()
+    # https://strftime.org/
+    return f"{prefix}-{now.strftime('%m%d%I%M')}.{suffix}"
 
 
 def get_mmdd_filename(prefix, suffix="log"):
-  now=datetime.datetime.today()
-  return f"{prefix}-{now.strftime('%m%d')}.{suffix}"
+    now = datetime.datetime.today()
+    return f"{prefix}-{now.strftime('%m%d')}.{suffix}"
 
 
 def write_log(logf, msg):
-  ts=datetime.datetime.today().strftime('%Y-%b-%d %H:%M:%S')
-  message=f"{ts} ---=== {msg} ===--- "
+    ts = datetime.datetime.today().strftime('%Y-%b-%d %H:%M:%S')
+    message = f"{ts} ---=== {msg} ===--- "
 
-  if logf == None:
-    print(f"{message}")
-  else:
-    logf.write(f"{message}{os.linesep}")
-    logf.flush()
+    if logf == None:
+        print(f"{message}")
+    else:
+        logf.write(f"{message}{os.linesep}")
+        logf.flush()
 
 
 def tee_log(logf, msg, do_print=True):
-  if do_print == True:
-    print(msg)
-  if logf != None:
-    write_log(logf, msg)
+    if do_print == True:
+        print(msg)
+    if logf != None:
+        write_log(logf, msg)
 
 
 def log_started_message(logf, prog=""):
-  tee_log(logf, f"""###
+    tee_log(logf, f"""###
 # {prog} started at {datetime.datetime.now().strftime('%I:%M.%S %p on %d %b %Y')}
 ### """)
 
 
 def do_nap(ss, log=None):
-  tee_log(log, f"Napping for {ss} seconds")
-  time.sleep(ss)
+    tee_log(log, f"Napping for {ss} seconds")
+    time.sleep(ss)
 
 
 def elapsed_seconds(start):
-  return f"elapsed={round(time.time() - start, 2)} seconds"
+    return f"elapsed={round(time.time() - start, 2)} seconds"
 
 
 ################
 # run/exec helpers
 ################
 def getoutput_from_run(cmd, logf, show_cmd=False, show_result=True, show_output=False, show_error=False):
-  start=time.time()
-  out=None
-  err=None
-  returncode=252
-  excpt=None
-  elapsed=0
-  try:
-    if show_cmd == True:
-      write_log(logf, f"About to start {cmd}")
-    # TODO: cat no_exist does not goto out nor err
-    # TODO: no special env or other-optional params
-    cmd_str=" ".join(cmd)
-    use_shell=False
-    if isinstance(cmd, str):
-      use_shell=True
-      cmd_str=cmd
+    start = time.time()
+    out = None
+    err = None
+    returncode = 252
+    excpt = None
+    elapsed = 0
+    try:
+        if show_cmd == True:
+            write_log(logf, f"About to start {cmd}")
+        # TODO: cat no_exist does not goto out nor err
+        # TODO: no special env or other-optional params
+        cmd_str = " ".join(cmd)
+        use_shell = False
+        if isinstance(cmd, str):
+            use_shell = True
+            cmd_str = cmd
 
-    proc=subprocess.Popen(cmd, shell=use_shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    returncode=proc.wait()
-    if proc.stdout is not None:
-      out=str(proc.stdout.read(), 'utf-8').strip()
+        proc = subprocess.Popen(cmd, shell=use_shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        returncode = proc.wait()
+        if proc.stdout is not None:
+            out = str(proc.stdout.read(), 'utf-8').strip()
 
-    if proc.stderr is not None:
-      err=str(proc.stderr.read(), 'utf-8').strip()
+        if proc.stderr is not None:
+            err = str(proc.stderr.read(), 'utf-8').strip()
 
-    elapsed=time.time() - start
-    if show_result:
-      tee_log(logf, f"[{cmd_str}]={returncode}, elapsed={round(elapsed, 2)} seconds")
-    if show_output:
-      tee_log(logf, f"===== [{cmd_str}]={returncode} ===== ")
-      tee_log(logf, out)
-      tee_log(logf, f"----- [{cmd_str}]={returncode} ----- ")
-    if show_error:
-      tee_log(logf, f"===== ERR [{cmd_str}]={returncode} ===== ")
-      tee_log(logf, err)
-      tee_log(logf, f"----- err [{cmd_str}]={returncode} ----- ")
+        elapsed = time.time() - start
+        if show_result:
+            tee_log(logf, f"[{cmd_str}]={returncode}, elapsed={round(elapsed, 2)} seconds")
+        if show_output:
+            tee_log(logf, f"===== [{cmd_str}]={returncode} ===== ")
+            tee_log(logf, out)
+            tee_log(logf, f"----- [{cmd_str}]={returncode} ----- ")
+        if show_error:
+            tee_log(logf, f"===== ERR [{cmd_str}]={returncode} ===== ")
+            tee_log(logf, err)
+            tee_log(logf, f"----- err [{cmd_str}]={returncode} ----- ")
 
-  except (FileNotFoundError, PermissionError) as e:
-    returncode=1
-    excpt=e
+    except (FileNotFoundError, PermissionError) as e:
+        returncode = 1
+        excpt = e
 
-  return { 'returncode': returncode, 'stdout': out, 'stderr': err, 'exception': excpt, 'elapsed': round(elapsed, 2) }
+    return {'returncode': returncode, 'stdout': out, 'stderr': err, 'exception': excpt, 'elapsed': round(elapsed, 2)}
 
 
 ###
 # For long running commands=https://www.endpoint.com/blog/2015/01/28/getting-realtime-output-using-python
 ###
 def do_run(cmd, logf, inpt=None, special_env=None, show_cmd=False, show_result=True):
-  """
-  Runs the specified cmd or list
-  grabs all the output (may encounter bufffing challenges) into memory
-  """
-  if show_cmd == True:
-    tee_log(logf, cmd)
-  env=None
-  if special_env is not None:
-    env={}
-    env.update(os.environ)
-    env.update(special_env)
+    """
+    Runs the specified cmd or list
+    grabs all the output (may encounter bufffing challenges) into memory
+    """
+    if show_cmd == True:
+        tee_log(logf, cmd)
+    env = None
+    if special_env is not None:
+        env = {}
+        env.update(os.environ)
+        env.update(special_env)
 
-  cmdStr=" ".join(cmd)
-  useShell=False
-  if isinstance(cmd, str):
-    useShell=True
-    cmdStr=cmd
+    cmdStr = " ".join(cmd)
+    useShell = False
+    if isinstance(cmd, str):
+        useShell = True
+        cmdStr = cmd
 
-  try:
-    # THERE SHOULD BE A BETTER WAY
-    if logf is not None:
-      stat=subprocess.run(cmd, stdout=logf, stderr=logf, text=True, input=inpt, env=env, close_fds=True, shell=useShell)
-    else:
-      stat=subprocess.run(cmd, text=True, input=inpt, env=env, close_fds=True, shell=useShell)
-  except (FileNotFoundError) as e:
-    tee_log(logf, f"{cmdStr} failed: {e}")
-    stat=subprocess.CalledProcessError(252, cmd)
+    try:
+        # THERE SHOULD BE A BETTER WAY
+        if logf is not None:
+            stat = subprocess.run(cmd, stdout=logf, stderr=logf, text=True, input=inpt, env=env, close_fds=True,
+                                  shell=useShell)
+        else:
+            stat = subprocess.run(cmd, text=True, input=inpt, env=env, close_fds=True, shell=useShell)
+    except (FileNotFoundError) as e:
+        tee_log(logf, f"{cmdStr} failed: {e}")
+        stat = subprocess.CalledProcessError(252, cmd)
 
-  if show_result == True:
-    tee_log(logf, f"do_run: Command=[{cmdStr}], ret={stat.returncode}")
+    if show_result == True:
+        tee_log(logf, f"do_run: Command=[{cmdStr}], ret={stat.returncode}")
 
-  # https://stackoverflow.com/questions/66763957 for why yes_no fails after this call!
-  # https://docs.python.org/3/library/subprocess.html
-  #  macos is OK, win10 both bash and dos fail inside cmder as well cmd
-  # stat = close(in_write_pipe_fd) 
-  # if stat != None:
-  #   print(f"close(in_write_pipe_fd) failed={stat}")
+    # https://stackoverflow.com/questions/66763957 for why yes_no fails after this call!
+    # https://docs.python.org/3/library/subprocess.html
+    #  macos is OK, win10 both bash and dos fail inside cmder as well cmd
+    # stat = close(in_write_pipe_fd)
+    # if stat != None:
+    #   print(f"close(in_write_pipe_fd) failed={stat}")
 
-  return stat
+    return stat
 
 
 def ask_then_run(cmd, logf, inpt=None, special_env=None, show_result=True, show_feedback=False):
-  write_log(logf, cmd)
-  stat=None
-  if not bool_yesno(f'Start {cmd}: (y/n) [n] '):
-    if show_feedback:
-      tee_log(logf, "NOT running as requested!")
+    write_log(logf, cmd)
+    stat = None
+    if not bool_yesno(f'Start {cmd}: (y/n) [n] '):
+        if show_feedback:
+            tee_log(logf, "NOT running as requested!")
+        else:
+            write_log(logf, "NOT running as requested!")
+        stat = subprocess.CalledProcessError(252, cmd)
     else:
-      write_log(logf, "NOT running as requested!")
-    stat=subprocess.CalledProcessError(252, cmd)
-  else:
-    stat=do_run(cmd, logf, inpt, special_env)
+        stat = do_run(cmd, logf, inpt, special_env)
 
-  return stat
+    return stat
 
 
 def get_pwd(use_tilda=True):
-  pwd=os.getcwd()
-  if use_tilda == True:
-    return pwd.replace(os.environ['HOME'], '~')
+    pwd = os.getcwd()
+    if use_tilda == True:
+        return pwd.replace(os.environ['HOME'], '~')
 
-  return pwd
+    return pwd
 
 
-def short_pwd(num_dirs=3, separator="/", verbose=0, reversed = False):
-  pfx="dbg> "
-  pwd=os.getcwd().replace("\\", "/").replace("C:", "").replace("F:", "")
-  elems=pwd.split('/')
-  num=len(elems)
-
-  act_size=num_dirs
-  if num_dirs > num:
-    act_size=num
-  elif num_dirs <= 0:
-    act_size=1
-  if verbose >= 1:
-    print(f"{pfx}Requested size={num_dirs} is un-handle able. Changed to {act_size}")
-
-  if separator is None:
+def short_pwd(num_dirs=3, separator="/", verbose=0, reversed=False):
+    pfx = "dbg> "
+    cwd = os.getcwd()
+    pwd = cwd.replace("C:", "").replace("F:", "").replace("\\", "/")
+    elems = pwd.split('/')
     if verbose > 1:
-      print(f"{pfx}Disallowed separator({separator}), using \"/\"")
-    separator="/"
-  if verbose > 1:
-    print(f"{pfx}using separator=[{separator}].{len(separator)}")
+        print(f"{pfx}cwd={cwd}, pwd={pwd}, elems={elems}")
+    num = len(elems)
 
-  i=act_size
-  ret=""
-  while i > 0:
-    nxt=num-i
-    if len(ret) == 0:
-      ret=f"{elems[nxt]}"
+    act_size = num_dirs
+    if num_dirs > num:
+        act_size = num
+    elif num_dirs <= 0:
+        act_size = 1
+    if verbose >= 1:
+        print(f"{pfx}Requested size={num_dirs} is un-handle able. Changed to {act_size}")
+
+    if separator is None:
+        if verbose > 1:
+            print(f"{pfx}Disallowed separator({separator}), using \"/\"")
+        separator = "/"
+    if verbose > 1:
+        print(f"{pfx}using separator=[{separator}].{len(separator)}")
+
+    if reversed:
+        start = num-1
+        end = 0 if act_size >= num else act_size
+        step = -1
     else:
-      ret+=f"{separator}{elems[nxt]}"
-    i=i-1
+        start = num-act_size
+        end = num
+        step = 1
 
+    ary = elems[start:end:step]
     if verbose >= 2:
-      print(f"{pfx}After decrement nxt={nxt} i={i}, ret={ret}")
+        print(f"{pfx}reversed={reversed}, start={start}, end={end}, step={step}, sliced={ary}")
+    ret = separator.join(ary)
 
-  if reversed:
-    ary=ret.split(separator)
-    a=len(ary)-1
-    rev_ret=""
-    while a >= 0:
-      if len(rev_ret) == 0:
-        rev_ret=f"{ary[a]}"
-      else:
-        rev_ret += f"{separator}{ary[a]}"
-
-      a=a-1
-      if verbose >= 2:
-        print(f"{pfx}a={a}, rev_ret={rev_ret}")
-    ret = rev_ret
-
-  return ret
+    return ret
 
 
 def get_prog(path):
-  if path is not None:
-    prog=path
-  else:
-    prog=__file__
+    if path is not None:
+        prog = path
+    else:
+        prog = __file__
 
-  prog=os.path.basename(prog)
-  prog=prog.split('.')[0]
-  return prog
+    prog = os.path.basename(prog)
+    prog = prog.split('.')[0]
+    return prog
 
 
 def get_tmp_log(name=None):
-  if name is None:
-    name=get_prog(__file__)
+    if name is None:
+        name = get_prog(__file__)
 
-  logdir=os.environ['HOME'] + os.sep + 'tmp' + os.sep + "git"
-  os.makedirs(logdir, exist_ok=True)
-  fn=logdir + os.sep
-  if fn.count(".") > 0:
-    fn=fn + name
-  else:
-    fn=fn + name + ".log"
+    logdir = os.environ['HOME'] + os.sep + 'tmp' + os.sep + "git"
+    os.makedirs(logdir, exist_ok=True)
+    fn = logdir + os.sep
+    if fn.count(".") > 0:
+        fn = fn + name
+    else:
+        fn = fn + name + ".log"
 
-  #print(f"{name}: fn=[{fn}], exists={is_exists(fn)}")
-  return fn
+    # print(f"{name}: fn=[{fn}], exists={is_exists(fn)}")
+    return fn
+
 
 ########################
 # git stuff
@@ -345,34 +337,33 @@ def get_tmp_log(name=None):
 
 
 def get_gitroot(logf=None):
-  m=getoutput_from_run(['git', 'rev-parse', '--git-dir'], logf, show_result=False)
-  root=None
-  if m['returncode'] == 0:
-    root=m['stdout']
-  return root
+    m = getoutput_from_run(['git', 'rev-parse', '--git-dir'], logf, show_result=False)
+    root = None
+    if m['returncode'] == 0:
+        root = m['stdout']
+    return root
 
 
 def get_num_modifications(logf):
-  num=0
-  m=getoutput_from_run(['git', 'status', '-s'], logf, show_output=False)
-  for i in m['stdout'].split(os.linesep):
-    i=i.strip()
-    if i.startswith("M"):
-      num=num + 1
+    num = 0
+    m = getoutput_from_run(['git', 'status', '-s'], logf, show_output=False)
+    for i in m['stdout'].split(os.linesep):
+        i = i.strip()
+        if i.startswith("M"):
+            num = num + 1
 
-  return num
+    return num
 
 
 def get_gitbranch(logf=None):
-  """
-  " equivalent to gtbr
-  """
-  branch=None
-  m=getoutput_from_run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], logf, show_result=False, show_cmd=False)
-  #print(f"{m}")
+    """
+    " equivalent to gtbr
+    """
+    branch = None
+    m = getoutput_from_run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], logf, show_result=False, show_cmd=False)
+    # print(f"{m}")
 
-  if m['returncode'] == 0:
-    branch=m['stdout']
+    if m['returncode'] == 0:
+        branch = m['stdout']
 
-  return branch
-
+    return branch
