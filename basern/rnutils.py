@@ -289,7 +289,7 @@ def short_pwd(num_dirs=3, separator="/", verbose=0, reversed=False):
 
     if reversed:
         start = num-1
-        end = 0 if act_size >= num else act_size
+        end = max(start - act_size, 0)
         step = -1
     else:
         start = num-act_size

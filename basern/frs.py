@@ -203,8 +203,10 @@ class FrsApp:
 
     fed_pct = (fed*100.0)/inc
     ca_pct = (ca*100.0)/inc
-    print(f"Your {self.frs.year} payment = ${fed+ca:,.2f} ({fed:,.2f} + {ca:,.2f}) ")
-    print(f"                        {(fed_pct + ca_pct):.2f}% ({fed_pct:.2f}% + {ca_pct:.2f}%)")
+    rem_pct = 100.0 - fed_pct - ca_pct
+    rem_amt = inc - fed - ca
+    print(f"Your {self.frs.year} payment = ${fed+ca:,.2f} ({fed:,.2f} + {ca:,.2f}) ${rem_amt:,.2f}")
+    print(f"                        {(fed_pct + ca_pct):.2f}% ({fed_pct:.2f}% + {ca_pct:.2f}%) {rem_pct:.2f}%")
     return 0
 
 @staticmethod
@@ -212,6 +214,7 @@ def activate_venv():
   # try venv, env, myenv
   envdir=os.path.join(os.path.dirname(__file__), "venv")
   print(f"venv={envdir}.exists={os.path.isdir(envdir)}")
+  print("")
   pass
 
 if __name__ == "__main__":
