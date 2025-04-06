@@ -2,14 +2,11 @@
 # coding: utf-8
 
 import sys
-import os
 
 __debug=False
 
-def yes_no(prompt):
-  pmpt = prompt
-  if prompt == None:
-    pmpt = "yes_or_no "
+def yes_no(to_ask = None):
+  pmpt = "Yes_or_No ?" if to_ask is None else to_ask
 
   try:
     v = input(pmpt).upper()
@@ -24,8 +21,8 @@ def yes_no(prompt):
     return 1
 
 
-def bool_yesno(prompt):
-  ret = yes_no(prompt)
+def bool_yesno(to_ask):
+  ret = yes_no(to_ask)
   if ret == 0:
     return True
 

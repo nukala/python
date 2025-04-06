@@ -53,6 +53,18 @@ def rename(fn, renamed):
         return False
 
 
+def log_ts(verbose = False):
+    """
+    Timestamp for logging
+    If verbose - millisecond accuracy upto 3 digits
+    """
+    fmt = '%Y-%b-%d %H:%M:%S.%f' if verbose else '%Y-%b-%d %H:%M:%S'
+    ts=f"{datetime.datetime.today().strftime(fmt)}"
+    # print(f"verbose={verbose}, format={fmt}, ts={ts}")
+    if verbose:
+        ts=ts[:-3]
+    return ts
+
 def get_next_logname(fname):
     """
     Tries a few times to find a ## suffixed log that does not exist.
@@ -303,7 +315,41 @@ def short_pwd(num_dirs=3, separator="/", verbose=0, reversed=False):
 
     return ret
 
+def find_recursively(fname, start_path=None, check_folder=False, verbose=False):
+    if start_path is None:
+        start_path = os.getcwd()
+        if verbose: 
+            print(f"start_path = [{start_path}]")
 
+    current_dir = start_path
+    while True:
+        the_path = os.path.join(current_dir, fname)
+        if verbose: 
+            print(f" checking the_path = [{the_path}]")
+        if check_folder and os.path.isdir(the_path):
+            return the_path
+        elif os.path.isfile(the_path):
+            return the_path
+
+        parent_dir = os.path.dirname(current_dir)
+        if parent_dir == current_dir:
+            # Reached the root directory
+            break
+
+        current_dir = parent_dir
+
+    return None
+
+# # Example usage
+# filename_to_find = "example.txt"
+# found_path = find_file_in_parents(filename_to_find)
+
+# if found_path:
+#     print(f"File found at: {found_path}")
+# else:
+#     print("File not found in current or parent directories.")
+
+#   pass
 def get_prog(path):
     if path is not None:
         prog = path

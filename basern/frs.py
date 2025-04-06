@@ -1,6 +1,8 @@
-import os
-import sys
+#!/usr/bin/env python3
+# coding: utf-8
+
 from argparse import ArgumentParser
+import sys
 
 #############################################
 # To calculate the total tax based on values seen in tables that show pct + min
@@ -209,16 +211,8 @@ class FrsApp:
     print(f"                        {(fed_pct + ca_pct):.2f}% ({fed_pct:.2f}% + {ca_pct:.2f}%) {rem_pct:.2f}%")
     return 0
 
-@staticmethod
-def activate_venv():
-  # try venv, env, myenv
-  envdir=os.path.join(os.path.dirname(__file__), "venv")
-  print(f"venv={envdir}.exists={os.path.isdir(envdir)}")
-  print("")
-  pass
 
 if __name__ == "__main__":
-  activate_venv()
   app = FrsApp()
 
   sys.exit(app.main(sys.argv))
