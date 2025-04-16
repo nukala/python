@@ -1,5 +1,9 @@
-#!/usr/bin/env python3
-# coding: utf-8
+##################################################################
+# Do not symlink ... messes up __FILE__
+#
+# TODO:
+#  handle from different folder
+##################################################################
 
 from basern import rnutils
 from datetime import datetime

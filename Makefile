@@ -1,6 +1,5 @@
 default: all
 
-
 all: init
 
 init:
@@ -25,14 +24,10 @@ deep-clean: clean
 
 # -I cleans up virtual env also
 clean:
-	rm -rf $(shell fd -tf -e pyc)
-#	@echo "pyc done"
-	rm -rf $(shell fd -td __pycache__ )
-#	rm -rf __pycache__
-	@echo ""
-#	$(shell cd ./basern; make clean)
-#	$(shell cd ./concurrent; make clean)
-#	$(shell cd ./class; make clean)
+	rm -rf $(shell fd -E venv -IH -e pyc)
+	@echo " >> pyc done"
+	rm -rf $(shell fd -E venv -IH __pycache__)
+	@echo " >> cache done"
 
 # to add a new "requirement" 
 #  pip3 install --dry-run pyclip
