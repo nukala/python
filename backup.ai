@@ -1,0 +1,22 @@
+=== prompts for GROK.com
+Write some python code. Use functions if code gets larger than 20 lines.
+problem statement = I want to backup a given folder that contains sources. 
+Idea is to be able to back up entire folder (including ignored like .git and invisible_starts_with_dot files)
+OR all visible_non_ignored files 
+OR just the files that have uncomitted changes.
+provide placeholders for locating files. I will do that manually 
+also write some unit tests with pytest
+provide a wrapper for shell command executions (where I can copy paste a command), handle error conditions and timeouts
+add requirements.txt if any libraries are needed. I will use pip later
+further provide a README.md that I can paste into existing version 
+all these files will be written into a zip whose name should be constructed like so:
+dirname__parentdirname__timestamp.zip for today, substitute dirname = foldername (no path)
+parentdirname = foldername of the parent directory (no path)
+timestamp = 2digit for years, 3 letters for current month in english + 2 digits for zero-padded today's date. 
+__ = separator
+So today = 21 April 2025, timestamp = 25apr21
+use argparse for CLI options
+please ask any followup questions if needed
+
+
+>>> miscellaneous questions asking for community preferences and questions about code not-captured
