@@ -10,7 +10,7 @@ from typing import List, Literal, Optional
 
 class BackupUtils:
     @staticmethod
-    def run_shell_command_popen(command: str, timeout: int = 30, log_file: Optional[str] = None) -> str:
+    def popen_based_run_command(command: str, timeout: int = 30, log_file: Optional[str] = None) -> str:
         """Execute a shell command using Popen (unused alternative implementation)."""
         try:
             process = subprocess.Popen(
@@ -179,7 +179,7 @@ def create_backup_zip(
 
     if Path(zip_path).exists():
         cmd=f"rm -f {zip_path}"
-        if verbose>2:
+        if verbose>0:
             print(f"  executing [{cmd}]")
         run_shell_command(cmd, verbose=verbose)
     ctr:int = 0
@@ -190,6 +190,40 @@ def create_backup_zip(
                 print(f"  {ctr:3d} writing into zip file={file}")
             zf.write(file)
     return zip_path
+
+
+def copy_to_dbxdir(zip_path: str, verbose: int = 0) -> bool :
+    # check env 
+    dbx_env="DBXDIR"
+    dbx_dir=os.getenv(dbx_env, "None")
+    if dbx_dir.casefold() == "None".casefold():
+        if verbose>0:
+            print(f" Missing {dbx_env} environment var. ")
+        return False
+
+    # check dir DBXDIR/dt/ghsv
+    ghsv_dir=Path(dbx_dir, "dt/ghsv")
+    if not ghsv_dir.exists():
+        if verbose>0:
+            print(f" Missing ghsv_dir={ghsv_dir}")
+        return False
+
+    # if exists
+    #  ls -ltr
+    dbx_bak=Path(dbx_dir, zip_path)
+    if dbx_bak.exists():
+        show_out=run_shell_command(f"ls -ltrd {dbx_bak}", verbose=verbose)
+        print(f"{show_out}")
+        #print(f"Please remove manually. \nrm - {dbx_bak}")
+        cmd=f"rm -f {dbx_bak}"
+        if verbose>0:
+            print(f"  executing [{cmd}]")
+        run_shell_command(cmd, verbose=verbose)
+
+    # copy zip_path into DBXDIR/dt/ghsv
+    run_shell_command(f"cp {zip_path} {dbx_bak}", verbose=verbose)
+    print(f"Archived into {dbx_bak}")
+    return True
 
 
 def main() -> None:
@@ -214,12 +248,21 @@ def main() -> None:
                         , help="verbose, supports -vv for more verbose"
                         , dest="verbose")
     parser.add_argument("--log-file", help="Optional log file for shell command outputs")
+    parser.add_argument("-nodbx", "--no-dbxdir",
+        action="store_true", default=False, dest="no_dbx", 
+        help="Do not copy into $DBXDIR/dt/ghsv folder")
+
     args = parser.parse_args()
 
     try:
         zip_path = create_backup_zip(args.source_dir, args.mode, args.output_dir, args.verbose, args.log_file)
         if zip_path:
             print(f"Backup created: {zip_path}")
+        if args.no_dbx:
+            if args.verbose>0:
+                print(f"NOT backing up to $DBXDIR")
+        else:    
+            copy_to_dbxdir(zip_path, args.verbose)
     except Exception as e:
         print(f"Backup failed: {e}")
         print(f"\nStack Trace: {traceback.format_exc()}")
