@@ -51,7 +51,8 @@ class BackupUtils:
             raise
 
 
-def run_shell_command(command: str, timeout: int = 30, verbose: int = 0, log_file: Optional[str] = None) -> str:
+def run_shell_command(command: str, timeout: int = 30, verbose: int = 0,
+                      show_output = False, log_file: Optional[str] = None) -> str:
     """Execute a shell command with error handling, timeout, and optional logging."""
     try:
         result = subprocess.run(
@@ -67,6 +68,9 @@ def run_shell_command(command: str, timeout: int = 30, verbose: int = 0, log_fil
         if log_file:
             with open(log_file, "a") as f:
                 f.write(f"Command: {command}\nOutput: {output}\n\n")
+        if show_output:
+            print(f"{output}")
+
         return output
     except subprocess.TimeoutExpired:
         error = f"Command '{command}' timed out after {timeout} seconds"
@@ -193,6 +197,11 @@ def create_backup_zip(
 
 
 def copy_to_dbxdir(zip_path: str, verbose: int = 0) -> bool :
+    if not zip_path:
+        if verbose>0:
+            print(f" empty zip_path, cannot archive")
+        return False
+
     # check env 
     dbx_env="DBXDIR"
     dbx_dir=os.getenv(dbx_env, "None")
@@ -210,10 +219,9 @@ def copy_to_dbxdir(zip_path: str, verbose: int = 0) -> bool :
 
     # if exists
     #  ls -ltr
-    dbx_bak=Path(dbx_dir, zip_path)
+    dbx_bak=Path(ghsv_dir, zip_path)
     if dbx_bak.exists():
-        show_out=run_shell_command(f"ls -ltrd {dbx_bak}", verbose=verbose)
-        print(f"{show_out}")
+        run_shell_command(f"ls -ltrd {dbx_bak}", verbose=verbose, show_output = True)
         #print(f"Please remove manually. \nrm - {dbx_bak}")
         cmd=f"rm -f {dbx_bak}"
         if verbose>0:
@@ -223,6 +231,7 @@ def copy_to_dbxdir(zip_path: str, verbose: int = 0) -> bool :
     # copy zip_path into DBXDIR/dt/ghsv
     run_shell_command(f"cp {zip_path} {dbx_bak}", verbose=verbose)
     print(f"Archived into {dbx_bak}")
+    run_shell_command(f"ls -ltrd {dbx_bak}", verbose=verbose, show_output = True)
     return True
 
 
