@@ -24,10 +24,11 @@ deep-clean: clean
 
 # -I cleans up virtual env also
 clean:
-	rm -rf $(shell fd -E venv -IH -e pyc)
+	rm -rf $(shell fd -IH -E venv -tf -e pyc)
 	@echo " >> pyc done"
-	rm -rf $(shell fd -E venv -IH __pycache__)
+	rm -rf $(shell fd -IH -E venv -td __pycache__ )
 	@echo " >> cache done"
+	@echo ""
 
 # to add a new "requirement" 
 #  pip3 install --dry-run pyclip

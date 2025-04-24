@@ -59,7 +59,7 @@ def run_shell_command(command: str, timeout: int = 30, verbose: int = 0,
             command, shell=True, capture_output=True, text=True, timeout=timeout
         )
         if verbose>1:
-            print(f"  {command},\n  result.returncode={result.returncode}")
+            print(f"{' ' * verbose}{command}, ret={result.returncode}")
         if result.returncode != 0:
             raise subprocess.CalledProcessError(
                 result.returncode, command, result.stderr
@@ -124,7 +124,7 @@ def bad_start(fname: str, verbose:int = 0) -> bool:
         if fname.startswith(bb):
             reject=True
             if verbose > 2:
-                print(f" rejecting {fname}, bb={bb}")
+                print(f"{' ' * verbose}rejecting {fname}, bb={bb}")
             break
 
     return reject
@@ -162,7 +162,7 @@ def create_backup_zip(
     zip_path = os.path.join(output_dir, zip_name)
 
     if verbose > 2:
-        print(f" zip={zip_path}")
+        print(f"{' ' * verbose}zip={zip_path}")
     if backup_mode == "full":
         files = collect_full_backup(source_dir, verbose)
     elif backup_mode == "visible":
@@ -177,21 +177,21 @@ def create_backup_zip(
         return None
 
     if verbose == 1:
-        print(f"backing up {len(files)} files. ")
+        print(f"{' ' * verbose}Backing up {len(files)} files. ")
     elif verbose > 2:
-        print(f"files = {files}.{len(files)}")
+        print(f"{' ' * verbose}files = {files}.{len(files)}")
 
     if Path(zip_path).exists():
         cmd=f"rm -f {zip_path}"
         if verbose>0:
-            print(f"  executing [{cmd}]")
+            print(f"{' ' * verbose}executing [{cmd}]")
         run_shell_command(cmd, verbose=verbose)
     ctr:int = 0
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for file in files:
             ctr += 1
             if verbose > 3:
-                print(f"  {ctr:3d} writing into zip file={file}")
+                print(f"{' ' * verbose}{ctr:3d} writing into zip file={file}")
             zf.write(file)
     return zip_path
 
@@ -199,7 +199,7 @@ def create_backup_zip(
 def copy_to_dbxdir(zip_path: str, verbose: int = 0) -> bool :
     if not zip_path:
         if verbose>0:
-            print(f" empty zip_path, cannot archive")
+            print(f"{' ' * verbose}empty zip_path, cannot archive")
         return False
 
     # check env 
@@ -207,14 +207,14 @@ def copy_to_dbxdir(zip_path: str, verbose: int = 0) -> bool :
     dbx_dir=os.getenv(dbx_env, "None")
     if dbx_dir.casefold() == "None".casefold():
         if verbose>0:
-            print(f" Missing {dbx_env} environment var. ")
+            print(f"{' ' * verbose}Missing {dbx_env} environment var. ")
         return False
 
     # check dir DBXDIR/dt/ghsv
     ghsv_dir=Path(dbx_dir, "dt/ghsv")
     if not ghsv_dir.exists():
         if verbose>0:
-            print(f" Missing ghsv_dir={ghsv_dir}")
+            print(f"{' ' * verbose}Missing ghsv_dir={ghsv_dir}")
         return False
 
     # if exists
@@ -225,7 +225,7 @@ def copy_to_dbxdir(zip_path: str, verbose: int = 0) -> bool :
         #print(f"Please remove manually. \nrm - {dbx_bak}")
         cmd=f"rm -f {dbx_bak}"
         if verbose>0:
-            print(f"  executing [{cmd}]")
+            print(f"{' ' * verbose}executing [{cmd}]")
         run_shell_command(cmd, verbose=verbose)
 
     # copy zip_path into DBXDIR/dt/ghsv
