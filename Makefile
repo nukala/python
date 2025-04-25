@@ -1,35 +1,40 @@
+PYTHON=python
+PIP=pip
+
 default: all
 
 all: init
 
 init:
 	@echo 'INIT: Not sure how we can use an env if running as a script from anywhere'
-	# pip3 --debug freeze --local > requirements.txt
-	# pip3 install -r requirements.txt
+	# ${PIP} --debug freeze --local > requirements.txt
+	# ${PIP} install -r requirements.txt
 
 mkreq: 
-	pip3 freeze --local > requirements.txt
-	pip3 freeze --verbose --all >> requirements.txt
+	${PIP} freeze --local > requirements.txt
+	${PIP} freeze --verbose --all >> requirements.txt
 	@echo " NOTE-PRE-COMMIT> Remove pip/pywin32 not-cross-platform deps manually"
 
 ## pip25 requires local installation?
 venv: requirements.txt
-	python3 -m venv --symlinks --system-site-packages venv
-#	python3 -m venv --symlinks --system-site-packages venv --clear --without-pip 
+	${PYTHON} -m venv --symlinks --system-site-packages venv
+#	${PYTHON} -m venv --symlinks --system-site-packages venv --clear --without-pip 
 
 deep-clean: clean
-	rm -rf ./env
-	rm -rf ./venv
-#	@echo "no-dir done"
+	@rm -rf ./env
+	@echo " >> env deep-cleaned"
+	@rm -rf ./venv
+	@echo " >> venv deep-cleaned"
+	@echo ""
 
 # -I cleans up virtual env also
 clean:
-	rm -rf $(shell fd -IH -E venv -tf -e pyc)
-	@echo " >> pyc done"
-	rm -rf $(shell fd -IH -E venv -td __pycache__ )
-	@echo " >> cache done"
+	@rm -rf $(shell fd -IH -tf -E venv -e pyc)
+	@echo " >> pyc cleaned"
+	@rm -rf $(shell fd -IH -td -E venv -E env __pycache__ )
+	@echo " >> cache cleaned"
 	@echo ""
 
 # to add a new "requirement" 
-#  pip3 install --dry-run pyclip
-#  pip3 install --verbose pyclip
+#  ${PIP} install --dry-run pyclip
+#  ${PIP} install --verbose pyclip
