@@ -38,3 +38,5 @@ clean:
 # to add a new "requirement" 
 #  ${PIP} install --dry-run pyclip
 #  ${PIP} install --verbose pyclip
+#  ${PIP} install -r requirements.txt --upgrade --verbose
+#  python -m pip install --upgrade pip --verbose
