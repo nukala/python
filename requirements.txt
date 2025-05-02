@@ -2,3 +2,8 @@ pyclip==0.7.0
 Send2Trash==1.8.2
 setuptools==75.8.0
 pytest==8.0.0
+
+Pillow>=9.0.0
+opencv-python>=4.5.0
+scikit-image>=0.19.0
+numpy>=1.20.0
