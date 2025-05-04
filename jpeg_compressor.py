@@ -13,6 +13,7 @@ from typing import Dict, Union, Optional, Any, Tuple
 import numpy as np
 from PIL import Image
 import cv2
+import traceback
 from skimage.metrics import structural_similarity as ssim
 
 def get_non_conflicting_output_path(input_path: Path, output_dir: Path) -> Path:
@@ -58,6 +59,7 @@ def compress_jpeg(
     input_path: Union[str, Path], 
     output_dir: Union[str, Path] = "~/tmp", 
     quality: int = 80, 
+    resize_factor: int = None,
     verbosity: int = 1
 ) -> Dict[str, Any]:
     """
@@ -67,6 +69,7 @@ def compress_jpeg(
         input_path: Path to the input JPEG image
         output_dir: Directory to save compressed image (defaults to ~/tmp)
         quality: JPEG compression quality (0-100, lower means higher compression)
+        resize_factor: To resize the image (0-100, lower means low resolution)
         verbosity: Level of verbosity (0=quiet, 1=normal, 2=detailed, 3=debug)
         
     Returns:
@@ -108,6 +111,15 @@ def compress_jpeg(
             if verbosity >= 3:
                 print(f"DEBUG: Image opened successfully. Mode: {img.mode}, Size: {img.size}")
             
+            if resize_factor and 1 < resize_factor < 100:
+                new_width = int((resize_factor/100) * img.width)
+                new_height = int((resize_factor/100) * img.height)
+                msg_str = f"[{img.width}x{img.height}] ==>> [{new_width}x{new_height}]"
+                img = img.resize((new_width, new_height), Image.LANCZOS)
+                if verbosity >= 2:
+                    print(f"Image resolution changed from [{msg_str}]")
+
+
             # Process the image (e.g., convert to RGB if needed)
             processed_img = process_image_for_compression(img)
             
@@ -130,7 +142,7 @@ def compress_jpeg(
         print(f"DEBUG: Size reduction: {size_reduction} bytes ({percentage_saved:.2f}%)")
     
     # Measure image quality difference
-    quality_metrics = measure_quality_difference(str(input_path), str(output_path))
+    quality_metrics = measure_quality_difference(str(input_path), str(output_path), resize_factor=resize_factor)
     
     if verbosity >= 3:
         print(f"DEBUG: Quality metrics calculated: {quality_metrics}")
@@ -158,13 +170,14 @@ def compress_jpeg(
     
     if verbosity >= 2:
         print("\nImage Quality Metrics:")
-        print(f"  SSIM index: {quality_metrics['ssim']:.4f} (1.0 = identical)")
         print(f"  PSNR: {quality_metrics['psnr']:.2f} dB (higher = better quality)")
-        print(f"  MSE: {quality_metrics['mse']:.2f} (lower = better quality)")
+        if not resize_factor:
+            print(f"  SSIM index: {quality_metrics['ssim']:.4f} (1.0 = identical)")
+            print(f"  MSE: {quality_metrics['mse']:.2f} (lower = better quality)")
     
     return results
 
-def measure_quality_difference(original_path: str, compressed_path: str) -> Dict[str, float]:
+def measure_quality_difference(original_path: str, compressed_path: str, resize_factor: int = None) -> Dict[str, float]:
     """
     Measure quality differences between original and compressed images.
     
@@ -184,10 +197,13 @@ def measure_quality_difference(original_path: str, compressed_path: str) -> Dict
     compressed_gray = cv2.cvtColor(compressed, cv2.COLOR_BGR2GRAY)
     
     # Calculate SSIM (Structural Similarity Index)
-    ssim_index = ssim(original_gray, compressed_gray)
-    
-    # Calculate PSNR (Peak Signal-to-Noise Ratio)
-    mse = np.mean((original - compressed) ** 2)
+    ssim_index = 0.0
+    mse = 100
+    if not resize_factor: 
+        ssim_index = ssim(original_gray, compressed_gray)
+        # Calculate PSNR (Peak Signal-to-Noise Ratio)
+        mse = np.mean((original - compressed) ** 2)
+
     if mse == 0:  # Images are identical
         psnr = float('inf')
     else:
@@ -217,6 +233,8 @@ def main() -> int:
                         help='Output directory (default: ~/tmp)')
     parser.add_argument('--quality', '-q', type=int, default=80, 
                         help='JPEG quality (0-100, default: 80)')
+    parser.add_argument('--resize', '-r', type=int, default=None, 
+                        help='To resize image resolution (0-100, default: 75)')
     
     # Add verbosity options with multiple levels
     verbosity_group = parser.add_mutually_exclusive_group()
@@ -238,10 +256,11 @@ def main() -> int:
         verbosity = args.verbosity
     
     try:
-        compress_jpeg(args.input, args.output_dir, args.quality, verbosity=verbosity)
+        compress_jpeg(args.input, args.output_dir, args.quality, resize_factor = args.resize, verbosity=verbosity)
         return 0
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
+        traceback.print_exc()
         return 1
 
 if __name__ == "__main__":
