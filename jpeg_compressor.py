@@ -260,7 +260,8 @@ def main() -> int:
         return 0
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        traceback.print_exc()
+        if verbosity > 0:
+            traceback.print_exc()
         return 1
 
 if __name__ == "__main__":
