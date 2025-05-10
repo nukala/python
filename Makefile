@@ -12,7 +12,8 @@ init:
 
 mkreq: 
 	${PIP} freeze --local > requirements.txt
-	${PIP} freeze --verbose --all >> requirements.txt
+	# all includes installation stuff too
+	#${PIP} freeze --verbose --all >> requirements.txt
 	@echo " NOTE-PRE-COMMIT> Remove pip/pywin32 not-cross-platform deps manually"
 
 ## pip25 requires local installation?
