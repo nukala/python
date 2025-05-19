@@ -3,6 +3,8 @@
 
 from argparse import ArgumentParser
 import sys
+from typing import List
+
 
 #############################################
 # To calculate the total tax based on values seen in tables that show pct + min
@@ -169,18 +171,33 @@ class FrsApp:
                         , dest="use_24", help=f"Use 2024 values")
     self.parsed, self.unknown_args = parser.parse_known_args(args)
 
+  @staticmethod
+  def parse_income_from_args(unknown_args: List[str], verbose: bool = False) -> int:
+    """Converts 5 into 5000; 5k into 5000; .5 to 500 etc."""
+    has_k = False
+    try:
+      has_k = unknown_args[1].capitalize().index("K") >= 0
+    except ValueError:
+      pass
+
+    ua = unknown_args[1].replace('K', 'k').replace('k', '')
+    if has_k:
+      inc = float(ua)*1000
+    else:
+      inc = float(ua)
+    if inc < 1000.0:
+      inc *= 1000
+      if verbose > 0:
+        print(f"  Converted {unknown_args[1]} into income of ${inc:.2f}")
+
+    return int(inc)
+
   def main(self, args):
     self.parse_args(args)
     if len(self.unknown_args) > 1:
-      ua = self.unknown_args[1].replace('K', 'k').replace('k', '')
-      inc = int(ua)
-      if inc < 1000:
-        was = inc
-        inc *= 1000
-        if self.parsed.verbose > 0:
-          print(f"  Converted {was} into income of ${inc:.2f}")
+      inc = FrsApp.parse_income_from_args(self.unknown_args, self.parsed.verbose)
     else:
-      inc = int(input("Enter income: "))
+      inc = int(float(input("Enter income: ")))
 
     if self.parsed.use_23:
       self.frs = FtbIrs2023()

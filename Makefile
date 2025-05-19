@@ -40,4 +40,5 @@ clean:
 #  ${PIP} install --dry-run pyclip
 #  ${PIP} install --verbose pyclip
 #  ${PIP} install -r requirements.txt --upgrade --verbose
-#  python -m pip install --upgrade pip --verbose
+#  ${PYTHON} -m pip install --upgrade pip --verbose
+#  ${PIP} install --ignore-installed --local --verbose --dry-run pyclip

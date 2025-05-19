@@ -39,8 +39,8 @@ class ForeignInvestmentCalculator:
 
 
 if __name__ == "__main__":
-    # Initialize calculator with $10,000 USD at 1.13 EUR/USD rate
-    calculator = ForeignInvestmentCalculator(10000, 1.08)
+    # Initialize calculator with $10,000 USD at 1.08 EUR/USD rate
+    calculator = ForeignInvestmentCalculator(10000, 1.1253)
     
     # Define scenarios
     inv_changes = [0.10, 0.05, 0.0, -0.05, -0.10]  # +10% to -10%
