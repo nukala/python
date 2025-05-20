@@ -18,15 +18,17 @@ def test_parse_range_element(parser):
 
 
 def test_parse_range_string(parser):
-    """Test parsing of complete range strings."""
-    assert parser.parse_range_string("1,3-10,12,14-18") == {1, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 17, 18}
+    """Test parsing of complete range strings.
+       Range strings have -p separator
+    """
+    assert parser.parse_range_string("-p1,3-10,12,14-18") == {1, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 17, 18}
     assert parser.parse_range_string("-p1,3-5") == {1, 3, 4, 5}
     assert parser.parse_range_string("-p42") == {42}
-    assert parser.parse_range_string("1-3,5-7") == {1, 2, 3, 5, 6, 7}
+    assert parser.parse_range_string("-p1-3,5-7") == {1, 2, 3, 5, 6, 7}
     assert parser.parse_range_string("") == set()
     assert parser.parse_range_string("-p") == set()
-    assert parser.parse_range_string("1,3,4,6") == {1, 3, 4, 6}
-    assert parser.parse_range_string("1,3-4,6") == {1, 3, 4, 6}
+    assert parser.parse_range_string("-p1,3,4,6") == {1, 3, 4, 6}
+    assert parser.parse_range_string("-p1,3-4,6") == {1, 3, 4, 6}
     assert parser.parse_range_string(" 1_a29-hd-p1,3.pdf") == {1, 3}
     assert parser.parse_range_string(" a30-pma-p4,7,8.pdf ") == {4, 7, 8}
     

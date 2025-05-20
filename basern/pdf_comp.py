@@ -56,10 +56,11 @@ class PageNumberParser:
             Set of integers represented by the input string
         """
         result: Set[int] = set()
-        # if '-p' not in input_str:
-        #     if self.verbose >= 1:
-        #         print("Is there a page number in [{input_str}]")
-        #     return result
+        psep: str = '-p'
+        if psep not in input_str:
+            if self.verbose >= 1:
+                print(f"Is there a page number in [{input_str}], required page separator[{psep}] missing")
+            return result
 
         content = self.get_content_to_parse(input_str)
         if self.verbose > 1:
