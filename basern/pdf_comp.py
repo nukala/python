@@ -118,5 +118,5 @@ if __name__ == "__main__":
     p.verbose = 4
     print(f"parsing [{fn}]")
     nums = p.parse_range_string(fn)
-    print(f"numbers = [{p.format_range_set(nums)}]\n")
+    print(f"  set=[{nums}]\n  reader-friendly = [{p.format_range_set(nums)}]\n")
 

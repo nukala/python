@@ -49,7 +49,7 @@ def test_complete_workflow(parser):
 
 
 def test_nopage_number(parser):
-    """Input_String with no page detail."""
-    input_str = "May-2025_10241-1378-Dynes-St_10066-Monthly-Statement.pdf"
+    """Input_String with no page (lacking -p) detail."""
+    input_str = "May-2025_9453545_10066-Monthly-Notice.pdf"
     number_set = parser.parse_range_string(input_str)
     assert len(number_set) == 0
