@@ -4,7 +4,6 @@ import subprocess
 import traceback
 import zipfile
 from pathlib import Path
-from datetime import datetime
 from typing import List, Literal, Optional
 
 
@@ -51,6 +50,19 @@ class BackupUtils:
             raise
 
 
+# jun09 - refined from heic_jpg
+def dbgln(msg: str, level: int = 0, verbosity: int = 0):
+    if level < 0:
+        return
+    if level <= verbosity:
+        pfx: str = ' ' * level
+        # RNTODO - use one line style
+        nl = '\n'
+        if nl in msg:
+            nl = ""
+        print(f"{pfx}{msg}", end=nl)
+
+
 def run_shell_command(command: str, timeout: int = 30, verbose: int = 0,
                       show_output = False, log_file: Optional[str] = None) -> str:
     """Execute a shell command with error handling, timeout, and optional logging."""
@@ -58,8 +70,7 @@ def run_shell_command(command: str, timeout: int = 30, verbose: int = 0,
         result = subprocess.run(
             command, shell=True, capture_output=True, text=True, timeout=timeout
         )
-        if verbose>1:
-            print(f"{' ' * verbose}{command}, ret={result.returncode}")
+        dbgln(f"ret={result.returncode}", 1, verbose)
         if result.returncode != 0:
             raise subprocess.CalledProcessError(
                 result.returncode, command, result.stderr
@@ -144,6 +155,22 @@ def collect_visible_non_ignored(source_dir: str,
     cmd="fd -tf -E target -E __pycache__ -E venv -E '*.zip' -E out -E '*.env' "
     return run_shell_command(cmd, verbose=verbose).split('\n')
 
+def build_zipfn_name(source_dir: str, output_dir: str = ".") -> str:
+    """Create a zip backup based on the specified mode."""
+    source_path = Path(source_dir).resolve()
+    parts = str(source_path).split(os.sep)
+    dirname = parts[-1]
+    parent_dirname = parts[-2]
+    #timestamp = datetime.now().strftime("%y%b%d").lower()
+    zip_name = f"{dirname}__{parent_dirname}-{os.getenv('CMPNY', 'rn')}.zip"
+    zip_path = os.path.join(output_dir, zip_name)
+    return zip_path
+
+def delete_zipfn(zip_fn: str, verbose: int = 0):
+    if Path(zip_fn).exists():
+        cmd=f"rm -f {zip_fn}"
+        dbgln(f"executing [{cmd}]")
+        run_shell_command(cmd, verbose=verbose)    
 
 def create_backup_zip(
         source_dir: str,
@@ -153,16 +180,9 @@ def create_backup_zip(
         log_file: Optional[str] = None
 ) -> Optional[str]:
     """Create a zip backup based on the specified mode."""
-    source_path = Path(source_dir).resolve()
-    parts = str(source_path).split(os.sep)
-    dirname = parts[-1]
-    parent_dirname = parts[-2]
-    #timestamp = datetime.now().strftime("%y%b%d").lower()
-    zip_name = f"{dirname}__{parent_dirname}-{os.getenv('CMPNY', 'rn')}.zip"
-    zip_path = os.path.join(output_dir, zip_name)
+    zip_fn = build_zipfn_name(source_dir, output_dir)
 
-    if verbose > 2:
-        print(f"{' ' * verbose}zip={zip_path}")
+    dbgln(f"zip={zip_fn}", 2, verbose)
     if backup_mode == "full":
         files = collect_full_backup(source_dir, verbose)
     elif backup_mode == "visible":
@@ -176,45 +196,35 @@ def create_backup_zip(
         print("No files to backup.")
         return None
 
-    if verbose == 1:
-        print(f"{' ' * verbose}Backing up {len(files)} files. ")
-    elif verbose > 2:
-        print(f"{' ' * verbose}files = {files}.{len(files)}")
+    dbgln(f"Backing up {len(files)} files. ", 1, verbose)
+    dbgln(f"files = {files}.{len(files)}", 2, verbose)
 
-    if Path(zip_path).exists():
-        cmd=f"rm -f {zip_path}"
-        if verbose>0:
-            print(f"{' ' * verbose}executing [{cmd}]")
-        run_shell_command(cmd, verbose=verbose)
+    delete_zipfn(zip_fn, verbose)
     ctr:int = 0
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+    with zipfile.ZipFile(zip_fn, "w", zipfile.ZIP_DEFLATED) as zf:
         for file in files:
             ctr += 1
-            if verbose > 3:
-                print(f"{' ' * verbose}{ctr:3d} writing into zip file={file}")
+            dbgln(f"{ctr:3d} writing into zip file={file}", 3, verbose)
             zf.write(file)
-    return zip_path
+    return zip_fn
 
 
 def copy_to_dbxdir(zip_path: str, verbose: int = 0) -> bool :
     if not zip_path:
-        if verbose>0:
-            print(f"{' ' * verbose}empty zip_path, cannot archive")
+        dbgln(f"empty zip_path, cannot archive")
         return False
 
     # check env 
     dbx_env="DBXDIR"
     dbx_dir=os.getenv(dbx_env, "None")
     if dbx_dir.casefold() == "None".casefold():
-        if verbose>0:
-            print(f"{' ' * verbose}Missing {dbx_env} environment var. ")
+        dbgln(f"Missing {dbx_env} environment var. ")
         return False
 
     # check dir DBXDIR/dt/ghsv
     ghsv_dir=Path(dbx_dir, "dt/ghsv")
     if not ghsv_dir.exists():
-        if verbose>0:
-            print(f"{' ' * verbose}Missing ghsv_dir={ghsv_dir}")
+        dbgln(f"Missing ghsv_dir={ghsv_dir}")
         return False
 
     # if exists
@@ -224,13 +234,12 @@ def copy_to_dbxdir(zip_path: str, verbose: int = 0) -> bool :
         run_shell_command(f"ls -ltrd {dbx_bak}", verbose=verbose, show_output = True)
         #print(f"Please remove manually. \nrm - {dbx_bak}")
         cmd=f"rm -f {dbx_bak}"
-        if verbose>0:
-            print(f"{' ' * verbose}executing [{cmd}]")
+        dbgln(f"executing [{cmd}]")
         run_shell_command(cmd, verbose=verbose)
 
     # copy zip_path into DBXDIR/dt/ghsv
     run_shell_command(f"cp {zip_path} {dbx_bak}", verbose=verbose)
-    print(f"Archived into {dbx_bak}")
+    dbgln(f"Archived into {dbx_bak}")
     run_shell_command(f"ls -ltrd {dbx_bak}", verbose=verbose, show_output = True)
     return True
 
@@ -267,9 +276,13 @@ def main() -> None:
         zip_path = create_backup_zip(args.source_dir, args.mode, args.output_dir, args.verbose, args.log_file)
         if zip_path:
             print(f"Backup created: {zip_path}")
+        else:
+             # RNTODO - delete this zip name and arrange for dbx-zip-deletion if allowed
+             zip_fn = build_zipfn_name(args.source_dir, args.output_dir)
+             delete_zipfn(zip_fn, args.verbose)
+
         if args.no_dbx:
-            if args.verbose>0:
-                print(f"NOT backing up to $DBXDIR")
+            dbgln(f"NOT backing up to $DBXDIR")
         else:    
             copy_to_dbxdir(zip_path, args.verbose)
     except Exception as e:

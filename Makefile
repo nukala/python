@@ -42,4 +42,4 @@ clean:
 #  ${PIP} install -r requirements.txt --upgrade --verbose
 #  ${PYTHON} -m pip install --upgrade pip --verbose
 #  ${PIP} install --ignore-installed --local --verbose --dry-run pyclip
-#  ${PIP} install --break-system-packages --dry-run pandas
+#  ${PIP} install --break-system-packages --verbose --dry-run pandas

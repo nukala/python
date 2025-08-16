@@ -23,7 +23,7 @@ class FtbIrsUtils:
 
       if min_amt <= inc <= max_amt:
         if parsed.verbose > 1:
-          print(f"   For ${inc} match={i}")
+          print(f"   For ${inc}, bracket={i}")
         return i
 
     return None
@@ -49,7 +49,7 @@ class FtbIrsUtils:
     payment = (fraction*over) + threshold
     if parsed.verbose > 2:
       print(f"   inc={inc}, over={over}, threshold={threshold}, fraction={fraction:.4f}"
-            f", payment={payment:.2f}, orig_inc={orig_inc}\n")
+            f", payment={payment:.2f}, raw_income={orig_inc}\n")
     return payment
 
 
@@ -92,7 +92,7 @@ class FtbIrs2025(FtbIrsNW):
   def __init__(self):
     super(FtbIrs2025, self)
     self.year = 2025
-    self.irs_std = 29_200
+    self.irs_std = 30_000 # big-beautiful-bill
     self.ftb_std = 10_726
     self.exempt_ftb = 298
 
