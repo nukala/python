@@ -108,7 +108,7 @@ class Rbt:
     
     def show_success(self, fn):
       if self.mtag == "MacOS":
-        print(f"Trashed \"{fn}\"\n")
+        print(f"Trashed \"{fn}\"")
       elif self.mtag == "PC":
         print(f"Sent {fn} to \"Recycle Bin\"")
       else: 
