@@ -16,11 +16,12 @@ print("platform_version: " + platform.version())
 print("python_version: " + ".".join(platform.python_version_tuple()[:2]))
 print("python_full_version: " + platform.python_version())
 
-print("")
+print(" ==== sys ==== ")
 print("exec_prefix: " + sys.exec_prefix)
 print("base_exec_prefix: " + sys.base_exec_prefix)
 print("api_version: " + str(sys.api_version))
 print("version_info: " + str(sys.version_info))
+print(f"path: {str(sys.path)}\n")
 if os.environ.get("HOME") is not None: 
   print(f"home: {os.environ["HOME"]}")
 elif os.environ.get("USERPROFILE") is not None: 

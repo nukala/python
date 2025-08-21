@@ -27,47 +27,54 @@ import send2trash
 
 class Rbt:
     verbosity: int = 0
-    lsl: bool = False
+    skip_listing: bool = False
     interactive: bool = False
-    # mtag: str = None
-    # parser: ArgumentParser = None
     args = None
 
     def __init__(self):
       self.mtag = GetMtag().to_string()
-      # self.parsed = None
-      # self.args = None
-      # values from CLI
-      # self.verbosity = 0
-      # self.lsl = False
-      # self.interactive = False
+      self.separator = False
 
-    def parse_args(self, args=None):
-      ### BROKEN!
-      parser = ArgumentParser(description="Tool to send files to trash")
-      parser.add_argument("-v", "--verbose", dest="verbosity", action="count", help="Print deleted files")
-      parser.add_argument("-l", "--list", dest="lsl", action="store_true", help="List the file details (ls -ltr equiv)")
-      parser.add_argument("-i", "--interactive", dest="interactive", action="store_true", help="ask and then recycle/trash")
-      parsed, self.args = parser.parse_known_args()
-
-      # population
+    def populate_cli_args(self, parsed): 
+      """
+      Populate various fields from `parsed` into `self` 
+      """
       if parsed.verbosity is not None:
         self.verbosity = parsed.verbosity
-      if parsed.lsl is not None:
-        self.lsl = parsed.lsl
+      if parsed.skip_listing is not None:
+        self.skip_listing = parsed.skip_listing
       if parsed.interactive is not None:
         self.interactive = parsed.interactive
+      if parsed.separator is not None:
+        self.separator = parsed.separator
 
-      if self.verbosity >= 2:
-        print(f"parser=[{parsed}],\n verbosity={self.verbosity}, lsl={self.lsl}"
-              f", interactive={self.interactive}, tag={self.mtag}"
-              f"\n args={self.args}\n\n")
+    def post_process_cli_args(self):
+      """
+      Post processing of CLI args
+      """
 
       # post-processing
       if self.interactive:
-        self.lsl = True
+        self.skip_listing = False
         if self.verbosity > 1:
-          print(f"Force lsl={self.lsl}, due to interactive")
+          print(f"Force skip_listing={self.skip_listing}, due to interactive")
+
+    def parse_args(self, args=None):
+      parser = ArgumentParser(description="Tool to send files to trash")
+      parser.add_argument("-v", "--verbose", dest="verbosity", action="count", help="Print deleted files")
+      parser.add_argument("-nl", "--no-list", dest="skip_listing", action="store_true", 
+                    help="Do not `ls -l` that file.")
+      parser.add_argument("-s", "--separator", dest="separator", action="store_true", 
+                    help="Add an extra line separator after rbt'ing. ")
+      parser.add_argument("-i", "--interactive", dest="interactive", action="store_true", help="ask and then recycle/trash")
+      parsed, self.args = parser.parse_known_args()
+
+      self.populate_cli_args(parsed)
+      if self.verbosity >= 2:
+        print(f"parser=[{parsed}],\n verbosity={self.verbosity}, skip_listing={self.skip_listing}"
+              f", interactive={self.interactive}, tag={self.mtag}"
+              f"\n args={self.args}\n")
+      self.post_process_cli_args()
 
     @staticmethod
     def do_list(fn: str):
@@ -81,7 +88,7 @@ class Rbt:
         print(f" File \"{fn}\" does not exist?")
         return False
       do_remove: bool = True
-      if self.lsl:
+      if not self.skip_listing:
         self.do_list(fn)
       if self.interactive:
         do_remove = bool_yesno(f"Remove [{fn}] (y/n) [n] ")
@@ -106,7 +113,9 @@ class Rbt:
         print(f"Sent {fn} to \"Recycle Bin\"")
       else: 
         print(f"rbt'd {fn} for mtag={self.mtag} - NOT SUPPORTED")
-    
+      if self.separator:
+         print(f"")  
+
 if __name__ == "__main__":    
   rbt = Rbt()
 
@@ -116,5 +125,3 @@ if __name__ == "__main__":
   for arg in rbt.args:
     if rbt.remove(arg):
       rbt.show_success(arg)
-
-  print("")

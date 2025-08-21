@@ -16,6 +16,7 @@ import cv2
 import traceback
 from skimage.metrics import structural_similarity as ssim
 
+
 def get_non_conflicting_output_path(input_path: Path, output_dir: Path) -> Path:
     """
     Generate a non-conflicting output path for the compressed image.
@@ -40,6 +41,7 @@ def get_non_conflicting_output_path(input_path: Path, output_dir: Path) -> Path:
     
     return output_path
 
+
 def process_image_for_compression(img: Image.Image) -> Image.Image:
     """
     Process the image before compression (e.g., convert to RGB if needed).
@@ -54,6 +56,7 @@ def process_image_for_compression(img: Image.Image) -> Image.Image:
     if img.mode != 'RGB':
         return img.convert('RGB')
     return img
+
 
 def compress_jpeg(
     input_path: Union[str, Path], 
@@ -177,6 +180,7 @@ def compress_jpeg(
     
     return results
 
+
 def measure_quality_difference(original_path: str, compressed_path: str, resize_factor: int = None) -> Dict[str, float]:
     """
     Measure quality differences between original and compressed images.
@@ -216,6 +220,7 @@ def measure_quality_difference(original_path: str, compressed_path: str, resize_
         'mse': mse           # Lower is better (Mean Square Error)
     }
 
+
 def format_size(size_bytes: int) -> str:
     """Format file size in a human-readable way"""
     if size_bytes < 1024:
@@ -224,6 +229,7 @@ def format_size(size_bytes: int) -> str:
         return f"{size_bytes/1024:.2f} KB"
     else:
         return f"{size_bytes/(1024*1024):.2f} MB"
+
 
 def main() -> int:
     """Main entry point for CLI usage"""
@@ -263,6 +269,7 @@ def main() -> int:
         if verbosity > 0:
             traceback.print_exc()
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())
