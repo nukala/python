@@ -29,7 +29,8 @@ class Rbt:
     verbosity: int = 0
     skip_listing: bool = False
     interactive: bool = False
-    args = None
+    args: list = None
+    parser : ArgumentParser = None
 
     def __init__(self):
       self.mtag = GetMtag().to_string()
@@ -69,6 +70,7 @@ class Rbt:
       parser.add_argument("-i", "--interactive", dest="interactive", action="store_true", help="ask and then recycle/trash")
       parsed, self.args = parser.parse_known_args()
 
+      self.parser = parser
       self.populate_cli_args(parsed)
       if self.verbosity >= 2:
         print(f"parser=[{parsed}],\n verbosity={self.verbosity}, skip_listing={self.skip_listing}"
@@ -77,19 +79,25 @@ class Rbt:
       self.post_process_cli_args()
 
     @staticmethod
-    def do_list(fn: str):
-      #print(f"Write code to ls -l {fn}")
-      do_run(f"ls -ltr {fn}", logf=None, show_result=False)
+    def do_list(fn: str, verbosity: int = 0):
+      cmd = f"ls -ltr {fn}"
+      if verbosity >= 2:
+          print(f"Executing [{cmd}]")
+      do_run(cmd, logf=None, show_result=False)
 
       pass
 
     def remove(self, fn:str):
       if not is_exists(fn):
-        print(f" File \"{fn}\" does not exist?")
+        if fn.startswith("-"):
+          print(f"filename that startswith dash({arg}), not supported")
+          rbt.parser.print_help()
+        else:
+          print(f" File \"{fn}\" does not exist?")
         return False
       do_remove: bool = True
       if not self.skip_listing:
-        self.do_list(fn)
+        self.do_list(fn, self.verbosity)
       if self.interactive:
         do_remove = bool_yesno(f"Remove [{fn}] (y/n) [n] ")
       try:
