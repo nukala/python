@@ -2,6 +2,13 @@ from typing import Set, List, Tuple
 import sys
 import traceback
 
+###########################################################################
+# Goals:
+#    identify page numbers
+#    extract pages
+#    compress
+#    quality details
+###########################################################################
 
 class PageNumberParser:
     verbose = 0

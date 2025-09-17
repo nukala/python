@@ -22,7 +22,6 @@ from basern.rnutils import do_run
 from basern.yesno import bool_yesno
 from basern.rnutils import is_exists
 
-import sys
 import send2trash
 
 class Rbt:
@@ -31,6 +30,13 @@ class Rbt:
     interactive: bool = False
     args: list = None
     parser : ArgumentParser = None
+
+    @staticmethod
+    def do_list(fn: str, verbosity: int = 0):
+      cmd = f"ls -ltr {fn}"
+      if verbosity >= 2:
+          print(f"Executing [{cmd}]")
+      do_run(cmd, logf=None, show_result=False)
 
     def __init__(self):
       self.mtag = GetMtag().to_string()
@@ -61,13 +67,15 @@ class Rbt:
           print(f"Force skip_listing={self.skip_listing}, due to interactive")
 
     def parse_args(self, args=None):
-      parser = ArgumentParser(description="Tool to send files to trash")
-      parser.add_argument("-v", "--verbose", dest="verbosity", action="count", help="Print deleted files")
-      parser.add_argument("-nl", "--no-list", dest="skip_listing", action="store_true", 
-                    help="Do not `ls -l` that file.")
-      parser.add_argument("-s", "--separator", dest="separator", action="store_true", 
-                    help="Add an extra line separator after rbt'ing. ")
-      parser.add_argument("-i", "--interactive", dest="interactive", action="store_true", help="ask and then recycle/trash")
+      parser = ArgumentParser(description="Send file[s] to RecycleBin_or_Trash")
+      parser.add_argument("-v", "--verbose", dest="verbosity", action="count",
+                          help="Print deleted files, vvv makes it verbosity=3 and so on")
+      parser.add_argument("-nl", "--no-list", dest="skip_listing", action="store_true",
+                          help="Do not `ls -l` that file.")
+      parser.add_argument("-s", "--separator", dest="separator", action="store_true",
+                          help="Add an extra line separator after rbt'ing. ")
+      parser.add_argument("-i", "--interactive", dest="interactive", action="store_true",
+                          help="ask and then recycle/trash")
       parsed, self.args = parser.parse_known_args()
 
       self.parser = parser
@@ -77,15 +85,6 @@ class Rbt:
               f", interactive={self.interactive}, tag={self.mtag}"
               f"\n args={self.args}\n")
       self.post_process_cli_args()
-
-    @staticmethod
-    def do_list(fn: str, verbosity: int = 0):
-      cmd = f"ls -ltr {fn}"
-      if verbosity >= 2:
-          print(f"Executing [{cmd}]")
-      do_run(cmd, logf=None, show_result=False)
-
-      pass
 
     def remove(self, fn:str):
       if not is_exists(fn):
@@ -123,6 +122,7 @@ class Rbt:
         print(f"rbt'd {fn} for mtag={self.mtag} - NOT SUPPORTED")
       if self.separator:
          print(f"")  
+
 
 if __name__ == "__main__":    
   rbt = Rbt()

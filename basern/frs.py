@@ -92,7 +92,7 @@ class FtbIrs2025(FtbIrsNW):
   def __init__(self):
     super(FtbIrs2025, self)
     self.year = 2025
-    self.irs_std = 30_000 # big-beautiful-bill
+    self.irs_std = 31_500 # big-beautiful-bill
     self.ftb_std = 10_726
     self.exempt_ftb = 298
 
