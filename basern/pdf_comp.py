@@ -8,6 +8,7 @@ import traceback
 #    extract pages
 #    compress
 #    quality details
+#    rotation if specified!
 ###########################################################################
 
 class PageNumberParser:
