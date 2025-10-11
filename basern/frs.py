@@ -87,18 +87,17 @@ class FtbIrsNW:
   def calc_ftb(self, inc, parsed):
     return FtbIrsUtils.calc_payment(inc - self.exempt_ftb, self.ftb_std, self.ftb, parsed)
 
-
 class FtbIrs2025(FtbIrsNW):
   def __init__(self):
     super(FtbIrs2025, self)
     self.year = 2025
-    self.irs_std = 31_500 # big-beautiful-bill
+    self.irs_std = 31_500 # Ob3a
     self.ftb_std = 10_726
     self.exempt_ftb = 298
 
     # https://www.nerdwallet.com/article/taxes/federal-income-tax-brackets
     self.irs = [
-      [0, 23_850, 10, 0],
+      [0, 23_850, 0, 10],
       [23_851, 96_950, 2385, 12],
       [96_951, 206_700, 11_157, 22],
       [206_701, 394_600, 35_302, 24],
@@ -152,11 +151,30 @@ class FtbIrs2023(FtbIrsNW):
       [1_396_542, 99_000_000,  135_752.98, 12.3]
     ]
 
+class FtbIrs2026(FtbIrs2025):
+
+  def __init__(self):
+    super(FtbIrs2026, self)
+    super().__init__()
+    self.year = 2026
+    self.irs_std = 32_200
+
+    # https://www.msn.com/en-us/money/taxes/the-new-irs-tax-brackets-for-2026-are-here-see-where-you-fit-in/ar-AA1Oa7ms
+    self.irs = [
+        [0, 24_800, 10, 0],
+        [24_801, 100_800, 2_480, 12],
+        [100_801, 211_400, 11_600, 22],
+        [211_401, 403_550, 35_932, 24],
+        [403_550, 512_450, 82_048, 32],
+        [512_450, 768_700, 116_896, 35],
+        [768_701, 99_999_999, 206_583.50, 37]
+    ]
+
 
 class FrsApp:
 
   def __init__(self):
-    self.frs = FtbIrs2025()
+    self.frs = None
     self.parsed = None
     self.unknown_args = None
 
@@ -169,6 +187,10 @@ class FrsApp:
                         , dest="use_23", help=f"Use 2023 values")
     parser.add_argument('-24', '--2024', '--use_24', '--use_2024', action='store_true', default=False
                         , dest="use_24", help=f"Use 2024 values")
+    parser.add_argument('-25', '--2025', '--use_25', '--use_2025', action='store_true', default=False
+                        , dest="use_25", help=f"Use 2025 values")
+    parser.add_argument('-26', '--2026', '--use_26', '--use_2026', action='store_true', default=False
+                        , dest="use_26", help=f"Use 2026 values")
     self.parsed, self.unknown_args = parser.parse_known_args(args)
 
   @staticmethod
@@ -199,15 +221,24 @@ class FrsApp:
     else:
       inc = int(float(input("Enter income: ")))
 
-    if self.parsed.use_23:
+    if self.parsed.use_26:
+      self.frs = FtbIrs2026()
+      if self.parsed.verbose >= 8:
+        print(f"  inited 26, yr={self.frs.year}")
+    elif self.parsed.use_23:
       self.frs = FtbIrs2023()
     elif self.parsed.use_24:
       self.frs = FtbIrsNW()
-    if self.parsed.verbose > 2:
-      print(f"  using {self.frs.year} values std={self.frs.irs_std}/{self.frs.ftb_std}")
+      if self.parsed.verbose >= 8:
+        print(f"  inited NW")
+    else:
+      self.frs = FtbIrs2025()
+      if self.parsed.verbose >= 8:
+        print(f"  inited 25")
 
     if self.parsed.verbose > 3:
-      print(f"  parsed={str(self.parsed)}\n")
+      print(f"  parsed={str(self.parsed)}")
+      print(f"  frs={str(self.frs)}, yr={self.frs.year}, std={self.frs.irs_std:,}/{self.frs.ftb_std:,}")
 
     fed = self.frs.calc_irs(inc, self.parsed)
 
