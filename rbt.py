@@ -33,7 +33,7 @@ class Rbt:
 
     @staticmethod
     def do_list(fn: str, verbosity: int = 0):
-      cmd = f"ls -ltr {fn}"
+      cmd = f"ls -ltr \"{fn}\" "
       if verbosity >= 2:
           print(f"Executing [{cmd}]")
       do_run(cmd, logf=None, show_result=False)
