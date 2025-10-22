@@ -140,12 +140,22 @@ class gtclnr:
       self.pre_clean = self.get_gitroot_size(logf = logf)
     tee_log(logf, f"pre-clean size={self.pre_clean} KB")
 
+  def ssd_warning(self, logf = None):
+    """
+    SSDs are exhausted per write. So do not do this !
+    Identify if this is an SSD or atleast warn otherwise.
+    """
+    # from ssd_checker import is_ssd  this doesnot work on MacOS
+    # flag: bool = is_ssd(self.root)
+    # tee_log(logf, f"root={self.root} solid-state-drive={flag}")
+
 
 # end of gtclnr
 
 def main():
   clnr = gtclnr()
 
+  clnr.ssd_warning()
   clnr.show_preclean_size()
   clnr.shallow_clean()
   clnr.deep_clean()

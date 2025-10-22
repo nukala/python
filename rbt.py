@@ -1,28 +1,28 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-from argparse import ArgumentParser
 import traceback
+from argparse import ArgumentParser
+
+import send2trash
+
+from basern.getmtag import GetMtag
+from basern.rnutils import do_run
+from basern.rnutils import is_exists
+from basern.yesno import bool_yesno
+
 
 #######################################################
 # Remove files by sending to "RecycleBin" or "Trash", hence the acronym
 #
 # Soon:
 #  verify actual deletion
-#  directory support 
+#  directory support
 #  argparse and help
-    #https://github.com/arsenetar/send2trash/blob/master/send2trash/__main__.py
-
-    # for filename in args.files:
+# https://github.com/arsenetar/send2trash/blob/master/send2trash/__main__.py
+# for filename in args.files:
 #  cleanup (real) rbt?
 #######################################################
-
-from basern.getmtag import GetMtag
-from basern.rnutils import do_run
-from basern.yesno import bool_yesno
-from basern.rnutils import is_exists
-
-import send2trash
 
 class Rbt:
     verbosity: int = 0
