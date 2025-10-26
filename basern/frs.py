@@ -6,16 +6,21 @@ import sys
 from typing import List
 
 
-#############################################
+###############################################################################
 # To calculate the total tax based on values seen in tables that show pct + min
+# 
+# Values are accurate as seen on NerdWallet for federal - 25oct26
 #
-# Missing 401k contributions
 # develop a Brak class instead of an array
+# fix -v9 for verbosity=9
+#     401k, HRA etc.
+#     
 #
 # see also https://taxfoundation.org/data/all/federal/tax-calculator-obbba/
-#############################################
+###############################################################################
 
 INFINITY = 999_999_999
+TBC = -456_789
 
 class FtbIrsUtils:
   @staticmethod
@@ -49,13 +54,16 @@ class FtbIrsUtils:
     threshold = r[4]
     fraction = r[3]/100.0
     payment = (fraction*over) + threshold
-    if verbose > 1:
+    calc_str = ''
+    if verbose > 1 or show_next:
       calc_str = f"   {desc}={inc}, orig={orig_inc}, over={over}, threshold={threshold}, fraction={fraction:.4f}"
       calc_str += f", payment={payment:.2f}"
-      if show_next:
-        next_min = r[1] + 1
-        next_row = FtbIrsUtils.find_row(next_min, ary, 0, desc)
-        calc_str += f"  next={next_row[3]:.2f}%"
+ 
+      next_min = r[1] + 1
+      next_row = FtbIrsUtils.find_row(next_min, ary, 0, desc)
+      if verbose > 3:
+        print(f"   next_min={next_min}, next_row={next_row}")
+      calc_str += f"  next={next_row[3]:.2f}%"
 
       print(f"{calc_str}\n")
     
@@ -70,12 +78,12 @@ class FtbIrsUtils:
       s.append(total)
       # amount to charge at this percentage!
       to_charge = s[1] - s[0]
-      curr = to_charge * (s[3]/100.0)
+      curr = round(to_charge * (s[3]/100.0), 2)
       if verbose > 5:
-        print(f"  s={s}, curr={curr}, total={total}")
+        print(f"  s={s}, curr={curr}, old_total={total}")
       total = round(total + curr, 2)
 
-    if verbose > 3:
+    if verbose > 5:
       import pprint
       pretty_str = pprint.pformat(s_ary, indent=2, underscore_numbers=True)
       print(f"processed = {pretty_str}")
@@ -83,7 +91,7 @@ class FtbIrsUtils:
     for s in s_ary:
       typed_threshold = s[2]
       calc_threshold = s[4]
-      if typed_threshold != calc_threshold:
+      if typed_threshold != TBC and typed_threshold != calc_threshold:
         print(f"  ERR> ({s[0]}/{s[1]}): typed={typed_threshold}, calc={calc_threshold}")
         return None
     return s_ary
@@ -101,9 +109,12 @@ class FtbIrsNW:
     [0, 21_512, 0, 1],
     [21_512, 50_998, 215.12, 2],
     [50_998, 80_490, 804.84, 4],
-    [80_490, 111_732, 1984.52, 6],
-    [111_732, 141_212, 3859.04, 8],
-    [141_212, 721_318, 6217.44, 9.3]
+    [80_490, 111_732, 1_984.52, 6],
+    [111_732, 141_212, 3_859.04, 8],
+    [141_212, 721_318, 6_217.44, 9.3],
+    [721_318, 865_574, 60_167.30, 10.3],   # tables say .31
+    [865_574, 1_442_628, 75_025.67, 11.3],
+    [1442628, INFINITY, 140232.77, 12.3]
   ]
 
   # https://www.nerdwallet.com/article/taxes/federal-income-tax-brackets#2024-tax-brackets-(taxes-due-april-2025)
@@ -113,7 +124,8 @@ class FtbIrsNW:
     [94_300, 201_050, 10_852, 22],
     [201_050, 383_900, 34_337, 24],
     [383_900, 487_450, 78_221, 32],
-    [487_450, 731_200, 111_357, 35]
+    [487_450, 731_200, 111_357, 35],
+    [731_200, INFINITY, TBC, 37]
   ]
 
   def calc_irs(self, inc, parsed):
@@ -216,9 +228,12 @@ class FrsApp:
 
   def parse_args(self, args):
     parser = ArgumentParser(prog="frs",
-                            description="To calculate taxes upon AGI (assumes standard-deduction, MFJ, lives in CA)")
+                            description="To calculate taxes upon AGI (assumes standard-deduction, MFJ, lives in CA,"
+                            " no 401k, no HRA, no FSA)")
     parser.add_argument('-v', '--verbose', action='count', default=0, dest="verbose",
                         help="Enable verbosity (more logging with -vv etc.)")
+    parser.add_argument('-q', type=int, default=0, dest="verbose",
+                        help="Enable verbosity (more logging with -vv etc.)")                        
     parser.add_argument('-23', '--2023', '--use_23', '--use_2023', action='store_true', default=False
                         , dest="use_23", help=f"Use 2023 values")
     parser.add_argument('-24', '--2024', '--use_24', '--use_2024', action='store_true', default=False
