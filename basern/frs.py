@@ -19,27 +19,27 @@ INFINITY = 999_999_999
 
 class FtbIrsUtils:
   @staticmethod
-  def find_row(inc, ary, desc, parsed):
+  def find_row(inc, ary, verbose:int = 0, desc:str = 'IRS'):
     for i in ary:
       min_amt = i[0]
       max_amt = i[1]
 
       if min_amt <= inc <= max_amt:
-        if parsed.verbose > 0:
-          print(f"   {desc}=${inc}, bracket={i}, min={min_amt}, max={max_amt}")
+        if verbose > 0:
+          print(f"   {desc}=${inc}, bracket={i}")
         return i
 
     return None
 
   @staticmethod
-  def calc_payment(inc, deduct, ary, parsed, desc='IRS'):
+  def calc_payment(inc, deduct, ary, verbose: int = 0, show_next: bool = False, desc:str = 'IRS'):
     orig_inc = inc
-    if parsed.verbose > 2:
+    if verbose > 2:
       print(f"   inc={inc} will be reduced by {deduct}")
     inc -= deduct
     inc = max(inc, 0)
 
-    r = FtbIrsUtils.find_row(inc, ary, desc, parsed)
+    r = FtbIrsUtils.find_row(inc, ary, verbose, desc)
 
     if r is None:
       print(f"  ERR> nothing found for inc={inc}")
@@ -49,9 +49,16 @@ class FtbIrsUtils:
     threshold = r[4]
     fraction = r[3]/100.0
     payment = (fraction*over) + threshold
-    if parsed.verbose > 2:
-      print(f"   {desc}-inc={inc}, over={over}, threshold={threshold}, fraction={fraction:.4f}"
-            f", payment={payment:.2f}, raw_income={orig_inc}\n")
+    if verbose > 1:
+      calc_str = f"   {desc}={inc}, orig={orig_inc}, over={over}, threshold={threshold}, fraction={fraction:.4f}"
+      calc_str += f", payment={payment:.2f}"
+      if show_next:
+        next_min = r[1] + 1
+        next_row = FtbIrsUtils.find_row(next_min, ary, 0, desc)
+        calc_str += f"  next={next_row[3]:.2f}%"
+
+      print(f"{calc_str}\n")
+    
     return payment
 
   @staticmethod
@@ -110,10 +117,10 @@ class FtbIrsNW:
   ]
 
   def calc_irs(self, inc, parsed):
-    return FtbIrsUtils.calc_payment(inc - self.exempt_irs, self.irs_std, self.irs, parsed, desc='IRS')
+    return FtbIrsUtils.calc_payment(inc - self.exempt_irs, self.irs_std, self.irs, parsed.verbose, parsed.show_next, 'IRS')
 
   def calc_ftb(self, inc, parsed):
-    return FtbIrsUtils.calc_payment(inc - self.exempt_ftb, self.ftb_std, self.ftb, parsed, desc='ftb')
+    return FtbIrsUtils.calc_payment(inc - self.exempt_ftb, self.ftb_std, self.ftb, parsed.verbose, parsed.show_next, 'ftb')
 
 class FtbIrs2023(FtbIrsNW):
   def __init__(self):
@@ -220,6 +227,8 @@ class FrsApp:
                         , dest="use_25", help=f"Use 2025 values")
     parser.add_argument('-26', '--2026', '--use_26', '--use_2026', action='store_true', default=False
                         , dest="use_26", help=f"Use 2026 values")
+    parser.add_argument('-sn', '--show_next', action='store_true', default=False
+                        , dest="show_next", help=f"show next bracket pct, requires -vv or more")                        
     self.parsed, self.unknown_args = parser.parse_known_args(args)
 
   @staticmethod
