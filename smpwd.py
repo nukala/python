@@ -29,6 +29,8 @@ if __name__ == "__main__":
                       , help="path element separator")
   parser.add_argument("-r", "--reversed", action="store_true", dest="reversed"
                       , help="Reverse the folder names .../x/y/z becomes z/y/x/...")
+  parser.add_argument("--path", "--forced_path", type=str, dest="the_path"
+                      , help="forced path")
   parsed = parser.parse_args()
   if parsed.verbose >= 1:
     print(f"parsed arguments = {parsed}")
@@ -36,4 +38,9 @@ if __name__ == "__main__":
   end=''
   if parsed.newline:
     end = os.linesep
-  print(f"{short_pwd(parsed.num, parsed.separator, parsed.verbose, parsed.reversed)}", end=end)
+
+  folder = parsed.the_path
+  if folder is None:
+    folder = get_pwd()
+
+  print(f"{short_dir(folder, parsed.num, parsed.separator, parsed.verbose, parsed.reversed)}", end=end)

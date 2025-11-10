@@ -269,19 +269,20 @@ def ask_then_run(cmd, logf, inpt=None, special_env=None, show_result=True, show_
 
 def get_pwd(use_tilda=True):
     pwd = os.getcwd()
-    if use_tilda == True:
-        return pwd.replace(os.environ['HOME'], '~')
-
+    if use_tilda:
+        pwd = pwd.replace(os.environ['HOME'], '~')
+    pwd = pwd.replace("C:", "").replace("F:", "").replace("F:", "")
+    pwd = pwd.replace("\\", "/").replace("\\\\", "/")
     return pwd
 
 
-def short_pwd(num_dirs=3, separator="/", verbose=0, reversed=False):
+def short_dir(folder:str, num_dirs:int=3, separator:str="/", verbose:int=0, flipped:bool=False):
     pfx = "dbg> "
-    cwd = os.getcwd()
-    pwd = cwd.replace("C:", "").replace("F:", "").replace("\\", "/")
-    elems = pwd.split('/')
+    # cwd = os.getcwd()
+    # pwd = cwd.replace("C:", "").replace("F:", "").replace("\\", "/")
+    elems: list[str] = folder.replace("\\", "/").replace("\\\\", "/").split('/')
     if verbose > 1:
-        print(f"{pfx}cwd={cwd}, pwd={pwd}, elems={elems}")
+        print(f"{pfx}folder={folder}, elems={elems}")
     num = len(elems)
 
     act_size = num_dirs
@@ -299,7 +300,7 @@ def short_pwd(num_dirs=3, separator="/", verbose=0, reversed=False):
     if verbose > 1:
         print(f"{pfx}using separator=[{separator}].{len(separator)}")
 
-    if reversed:
+    if flipped:
         start = num-1
         end = max(start - act_size, 0)
         step = -1
@@ -310,7 +311,7 @@ def short_pwd(num_dirs=3, separator="/", verbose=0, reversed=False):
 
     ary = elems[start:end:step]
     if verbose >= 2:
-        print(f"{pfx}reversed={reversed}, start={start}, end={end}, step={step}, sliced={ary}")
+        print(f"{pfx}flipped={flipped}, start={start}, end={end}, step={step}, sliced={ary}")
     ret = separator.join(ary)
 
     return ret

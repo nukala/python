@@ -42,4 +42,4 @@ if __name__ == "__main__":
   end=''
   if parsed.newline:
     end = os.linesep
-  print(f"{short_pwd(parsed.num, parsed.separator, parsed.verbose, parsed.reversed)}", end=end)
+  print(f"{short_dir(get_pwd(), parsed.num, parsed.separator, parsed.verbose, parsed.reversed)}", end=end)
