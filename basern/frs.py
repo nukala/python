@@ -9,18 +9,20 @@ from typing import List
 ###############################################################################
 # To calculate the total tax based on values seen in tables that show pct + min
 # 
-# Values are accurate as seen on NerdWallet for federal - 25oct26
+# Exact match with NerdWallet for 2025 federal - 25oct26
 #
 # develop a Brak class instead of an array
 # fix -v9 for verbosity=9
-#     401k, HRA etc.
+#     no-warn nowarn nw - write warning message 
+#     pretax-deductions 401k+HRA+FSA etc
+#     show argparse help upon main exceptions!
 #     
 #
 # see also https://taxfoundation.org/data/all/federal/tax-calculator-obbba/
 ###############################################################################
 
 INFINITY = 999_999_999
-TBC = -456_789
+TBC = -123_456_789
 
 class FtbIrsUtils:
   @staticmethod
