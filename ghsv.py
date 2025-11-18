@@ -56,11 +56,12 @@ def dbgln(msg: str, level: int = 0, verbosity: int = 0):
         return
     if level <= verbosity:
         pfx: str = ' ' * level
-        # RNTODO - use one line style
-        nl = '\n'
-        if nl in msg:
-            nl = ""
-        print(f"{pfx}{msg}", end=nl)
+        eol = os.linesep if '\n' not in msg else ''
+        # # RNTODO - use one line style
+        # nl = '\n'
+        # if nl in msg:
+        #     nl = ""
+        print(f"{pfx}{msg}", end=eol)
 
 
 def run_shell_command(command: str, timeout: int = 30, verbose: int = 0,

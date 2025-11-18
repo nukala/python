@@ -1,7 +1,9 @@
+import os
 import sys
 import time
 from argparse import ArgumentParser
 from typing import Tuple
+from ghsv import dbgln
 
 def sleep_with_timing(milliseconds: int) -> Tuple[float, float, float]:
     """
@@ -27,9 +29,10 @@ class MsNap:
     msnap: int = 0
     verbose: int = 0
     fb_str: str = None
+    newline: bool = False
 
     def __init__(self):
-        self.parsed = None
+        self.parser = None
         self.unknown_args = None
 
     def populate_args(self, parsed):
@@ -42,7 +45,18 @@ class MsNap:
 
         if parsed.fb_str and len(parsed.fb_str) > 0:
             self.fb_str = parsed.fb_str
-        self.parsed = parsed
+        self.newline = parsed.newline
+
+        if self.msnap == 0 and len(self.unknown_args) > 1:
+            self.dbg1(f"No nap time specified. Looking at unknown_args={self.unknown_args}")
+            self.msnap = int(self.unknown_args[1])
+            self.dbg1(f"nap from unknown args={self.msnap}")
+
+    def dbg1(self, msg: str):
+        dbgln(msg, 1, self.verbose)
+
+    def dbg2(self, msg: str):
+        dbgln(msg, 2, self.verbose)
 
     def parse_args(self, args):
         parser = ArgumentParser(prog="frs",
@@ -55,26 +69,44 @@ class MsNap:
                             help = "feedback character to echo after napping")
         parser.add_argument("-n", '-nap', '--nap', '--ms_nap', type=int, default=0,
                             dest='msnap', help="Millseconds to nap")
+        parser.add_argument("-nl", "--new_line", action="store_true", dest="newline",
+                            help = "terminate with a new line")
+        self.parser = parser
         parsed, self.unknown_args = parser.parse_known_args(args)
         return parsed
 
-    def main(self, args):
+    def do_nap(self):
+        self.dbg2(f"napping for [{self.msnap}] millis")
+
+        start, end, elapsed = sleep_with_timing(self.msnap)  # sleep 500 ms
+        self.dbg2(f"start={start:.6f}, End={end:.6f}, Elapsed={elapsed:.3f} ms")
+        if self.fb_str:
+            print(f"{self.fb_str}", end=os.linesep if self.newline else '')
+
+    @staticmethod
+    def show_error(msg: str):
+        pfx = '' if 'ERR>' in msg else 'ERR> '
+        sys.stderr.write(f"{pfx}{msg}")
+
+    def main(self, args) -> int:
         parsed = self.parse_args(args)
 
         self.populate_args(parsed)
-        if self.verbose >= 1:
-            print(f" parsed={str(parsed)}")
+        self.dbg1(f"parsed={str(parsed)}, nap={self.msnap}")
 
-        if self.msnap > 0:
-            if self.verbose >= 2:
-                print(f"{' '*self.verbose}napping for [{self.msnap}] millis")
+        try:
+            if self.msnap > 0:
+                self.do_nap()
+                return 0
+            else:
+                MsNap.show_error(f"ERR> Requires a millisecond_nap argument [with -n or direct]\n\n")
+                self.parser.print_help()
+        # TODO - allow for generic exception not working
+        except Exception as e:
+            MsNap.show_error(f"exception = {str(e)}")
+            self.parser.print_help()
 
-            start, end, elapsed = sleep_with_timing(self.msnap)  # sleep 500 ms
-            if self.verbose >= 2:
-                print(f"{' '*self.verbose}start={start:.6f}, End={end:.6f}, Elapsed={elapsed:.3f} ms")
-            if self.fb_str:
-                print(f"{self.fb_str}", end = '')
-                print(f"separator")
+        return 1
 
 if __name__ == "__main__":
     app: MsNap = MsNap()
