@@ -12,8 +12,7 @@ from typing import List
 # Exact match with NerdWallet for 2025 federal - 25oct26
 #
 # develop a Brak class instead of an array
-# fix -v9 for verbosity=9
-#     no-warn nowarn nw - write warning message 
+# fix TODO in-addition to sprinkled everywhere!
 #     pretax-deductions 401k+HRA+FSA etc
 #     show argparse help upon main exceptions!
 #     
@@ -222,20 +221,35 @@ class FtbIrs2026(FtbIrs2025):
 
 
 class FrsApp:
+  verbose: int = 0
+  no_warn: bool = False
 
   def __init__(self):
     self.frs = None
     self.parsed = None
     self.unknown_args = None
 
+  def show_warning(self) -> bool:
+    if self.no_warn:
+      return True
+
+    print(f"Assumptions:")
+    print(f"  Lives in CA, Married-filing-jointly ")
+    print(f"  No 40x, no FSA, no HealthCare-FSA")
+    print(f"")
+
+    # False if warning is not accepted. TODO
+    return True
+
+
   def parse_args(self, args):
     parser = ArgumentParser(prog="frs",
                             description="To calculate taxes upon AGI (assumes standard-deduction, MFJ, lives in CA,"
                             " no 401k, no HRA, no FSA)")
-    parser.add_argument('-v', '--verbose', action='count', default=0, dest="verbose",
+    parser.add_argument('-v', action='count', default=0, dest="verbose",
                         help="Enable verbosity (more logging with -vv etc.)")
-    parser.add_argument('-q', type=int, default=0, dest="verbose",
-                        help="Enable verbosity (more logging with -vv etc.)")                        
+    parser.add_argument('--verbose', type=int, default=0, dest="verbose",
+                        help="Enable verbosity by specifying a number")
     parser.add_argument('-23', '--2023', '--use_23', '--use_2023', action='store_true', default=False
                         , dest="use_23", help=f"Use 2023 values")
     parser.add_argument('-24', '--2024', '--use_24', '--use_2024', action='store_true', default=False
@@ -246,7 +260,10 @@ class FrsApp:
                         , dest="use_26", help=f"Use 2026 values")
     parser.add_argument('-sn', '--show_next', action='store_true', default=False
                         , dest="show_next", help=f"show next bracket pct, requires -vv or more")                        
-    self.parsed, self.unknown_args = parser.parse_known_args(args)
+    parser.add_argument('-nw', '--no_warn', action='store_true', default=False
+                        , dest="no_warn", help=f"Do not show the warning")
+    parsed, self.unknown_args = parser.parse_known_args(args)
+    return parsed
 
   @staticmethod
   def parse_income_from_args(unknown_args: List[str], verbose: bool = False) -> int:
@@ -269,36 +286,32 @@ class FrsApp:
 
     return int(inc)
 
-  def main(self, args):
-    self.parse_args(args)
-    if len(self.unknown_args) > 1:
-      inc = FrsApp.parse_income_from_args(self.unknown_args, self.parsed.verbose)
-    else:
-      inc = int(float(input("Enter income: ")))
+  def populate_args(self, parsed):
+      # move to bottom after everything works ! TODO
+      self.parsed = parsed
+      self.verbose = parsed.verbose
+      self.no_warn = parsed.no_warn
 
-    if self.parsed.use_26:
-      self.frs = FtbIrs2026()
-      if self.parsed.verbose >= 8:
-        print(f"  inited 26, yr={self.frs.year}")
-    elif self.parsed.use_23:
-      self.frs = FtbIrs2023()
-    elif self.parsed.use_24:
-      self.frs = FtbIrsNW()
-      if self.parsed.verbose >= 8:
-        print(f"  inited NW")
-    else:
-      self.frs = FtbIrs2025()
-      if self.parsed.verbose >= 8:
-        print(f"  inited 25")
+      if parsed.use_26:
+          self.frs = FtbIrs2026()
+          if self.verbose >= 8:
+              print(f"  inited 26, yr={self.frs.year}")
+      elif parsed.use_23:
+          self.frs = FtbIrs2023()
+      elif parsed.use_24:
+          self.frs = FtbIrsNW()
+          if self.verbose >= 8:
+              print(f"  inited NW")
+      else:
+          self.frs = FtbIrs2025()
+          if self.verbose >= 8:
+              print(f"  inited 25")
 
-    self.frs.irs = FtbIrsUtils.process_ary(self.frs.irs, self.parsed.verbose)
-    self.frs.ftb = FtbIrsUtils.process_ary(self.frs.ftb, self.parsed.verbose)
-    if self.parsed.verbose > 3:
-      print(f"  parsed={str(self.parsed)}")
-      print(f"  frs={str(self.frs)}, yr={self.frs.year}, std={self.frs.irs_std:,}/{self.frs.ftb_std:,}")
+      self.frs.irs = FtbIrsUtils.process_ary(self.frs.irs, self.verbose)
+      self.frs.ftb = FtbIrsUtils.process_ary(self.frs.ftb, self.verbose)
 
+  def show_taxes(self, inc: int):
     fed = self.frs.calc_irs(inc, self.parsed)
-
     if fed < 0:
       print(f"Income of ${inc:.2f} is outside the scope of this tool (fed)")
       return 1
@@ -308,13 +321,29 @@ class FrsApp:
       print(f"Income of ${inc:.2f} is outside the scope of this tool (CA)")
       return 2
 
-    fed_pct = (fed*100.0)/inc
-    ca_pct = (ca*100.0)/inc
+    fed_pct = (fed * 100.0) / inc
+    ca_pct = (ca * 100.0) / inc
     rem_pct = 100.0 - fed_pct - ca_pct
     rem_amt = inc - fed - ca
-    print(f"Your {self.frs.year} payment = ${fed+ca:,.2f} ({fed:,.2f} + {ca:,.2f}) ${rem_amt:,.2f}")
+    print(f"Your {self.frs.year} payment = ${fed + ca:,.2f} ({fed:,.2f} + {ca:,.2f}) ${rem_amt:,.2f}")
     print(f"                        {(fed_pct + ca_pct):.2f}% ({fed_pct:.2f}% + {ca_pct:.2f}%) {rem_pct:.2f}%")
     return 0
+
+  def main(self, args):
+    parsed = self.parse_args(args)
+
+    self.populate_args(parsed)
+
+    if self.verbose > 3:
+      print(f"  parsed={str(parsed)}")
+      print(f"  frs={str(self.frs)}, yr={self.frs.year}, std={self.frs.irs_std:,}/{self.frs.ftb_std:,}")
+
+    if len(self.unknown_args) > 1:
+      inc = FrsApp.parse_income_from_args(self.unknown_args, self.verbose>=1)
+    else:
+      inc = int(float(input("Enter income: ")))
+
+    return self.show_taxes(inc)
 
 
 if __name__ == "__main__":
