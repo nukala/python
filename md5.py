@@ -43,51 +43,13 @@ class Md5:
 
     return hasher.hexdigest()
 
-  @staticmethod
-  def adjust_winpath(file_name, verbose = 0):
-    """
-    Adjusts file_name into WINDOwS friendly version.
-    Seems like `ln -s ` only WORKS when using `CYGWIN=winsymlinks:nativestrict ln -s FROM TO`
-    """
-    adjusted = file_name
-
-    drives = {
-               "/c/" : "C:/",
-               "/cygdrive/c/" : "C:/",
-               "/d/": "D:/",
-               "/cygdrive/d/": "D:/",
-             }
-    for key in drives:
-      if file_name.startswith(key):
-        repl = drives.get(key)
-        if verbose > 1:
-          print(f"[{file_name}] relacing={key} with={repl}")
-        file_name = file_name.replace(key, repl)
-
-    # if file_name.startswith("/c/"):
-    #     file_name = file_name.replace("/c/", "C:/")
-    # if file_name.startswith("/cygdrive/c/"):
-    #     file_name = file_name.replace("/cygdrive/c/", "C:/")
-    if verbose >= 1:
-        print(f"[{adjusted}] after replacements=[{file_name}]\n")
-    fn = file_name
-    if os.path.islink(file_name):
-      fn = os.path.readlink(file_name)
-      # BROKEN, UNTESTABLE code for links
-      if verbose > 1:
-        print(f" file=\"{file_name}\" is a link, resolved to={fn}\n")
-    else:
-      fn = os.path.realpath(file_name)
-      if verbose > 1:
-        print(f" realpath={fn}, for file={file_name}\n")
-      return fn
-
   def process_inline(self, file_name: str, verbose: int = 0):
     if verbose > 0:
       print(f"inline: Input filename=[{file_name}]")
     adjusted = file_name
     if platform.system() == 'Windows':
-      adjusted = self.adjust_winpath(file_name, verbose)
+      from basern.rnutils import adjust_winpath
+      adjusted = adjust_winpath(file_name, verbose)
 
     if not os.path.exists(adjusted):
       print(f"No such file \"{adjusted}\" \n")

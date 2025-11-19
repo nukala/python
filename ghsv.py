@@ -56,6 +56,8 @@ def dbgln(msg: str, level: int = 0, verbosity: int = 0):
         return
     if level <= verbosity:
         pfx: str = ' ' * level
+        msg = msg.replace("\n", "\n" + pfx).replace(os.linesep, os.linesep+pfx)
+
         eol = os.linesep if '\n' not in msg else ''
         # # RNTODO - use one line style
         # nl = '\n'
