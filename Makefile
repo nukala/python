@@ -1,5 +1,5 @@
 PYTHON=python
-PIP=pip
+PIP=${PYTHON} -m pip
 
 default: all
 

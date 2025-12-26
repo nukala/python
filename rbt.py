@@ -138,6 +138,8 @@ if __name__ == "__main__":
 
   rbt.parse_args()
   dbgln(f"Files = [{rbt.args}]\n", 1, rbt.verbose)
-  for arg in rbt.args:
+  for i, arg in enumerate(rbt.args):
     if rbt.remove(arg, rbt.verbose):
       rbt.show_success(arg)
+    if (len(rbt.args) - i) > 1:
+      print(f"")

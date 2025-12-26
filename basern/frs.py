@@ -173,7 +173,8 @@ class FtbIrs2025(FtbIrsNW):
     self.year = 2025
     self.irs_std = 31_500 # Ob3a
     self.ftb_std = 10_726
-    self.exempt_ftb = 298
+    # retains 2024 values, - https://chatgpt.com/c/691f8a3c-9e1c-832f-9206-ea5fb7fdb277
+    self.exempt_ftb = 153 * 2
 
     # https://www.irs.gov/newsroom/irs-releases-tax-inflation-adjustments-for-tax-year-2026-including-amendments-from-the-one-big-beautiful-bill#:~:text=24%25%20for%20incomes%20over%20%24105%2C700,for%20married%20couples%20filing%20jointly
     self.irs = [
@@ -186,18 +187,6 @@ class FtbIrs2025(FtbIrsNW):
       [751_600, INFINITY, 202_154.50, 37]
     ]
 
-    # https://www.ftb.ca.gov/about-ftb/newsroom/tax-news/index.html
-    self.ftb =  [
-      [0, 22_158, 0.00, 1.0],
-      [22_158, 52_528, 221.58, 2.0],
-      [52_528, 82_904, 828.98, 4],
-      [82_904, 115_084, 2_044.02, 6],
-      [115_084,	145_448, 3_974.82, 8],
-      [145_448, 742_958, 6_403.94, 9.3],
-      [742_958, 891_542, 61_972.37, 10.3],
-      [891_542, 1_485_906, 77_276.52, 11.3],
-      [1_485_906, INFINITY, 144_439.65, 12.3]
-    ]
 
 #### once fully populated, use root parent class
 class FtbIrs2026(FtbIrs2025):
