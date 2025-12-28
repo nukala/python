@@ -172,6 +172,7 @@ def compress_jpeg(
         print(f"  Space saved: {format_size(size_reduction)} ({percentage_saved:.2f}%)")
     
     if verbosity >= 2:
+        # RNTODO -- show the originals in `(was=xx) style`
         print("\nImage Quality Metrics:")
         print(f"  PSNR: {quality_metrics['psnr']:.2f} dB (higher = better quality)")
         if not resize_factor:

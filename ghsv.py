@@ -4,6 +4,7 @@ import subprocess
 import traceback
 import zipfile
 from pathlib import Path
+from types import NoneType
 from typing import List, Literal, Optional
 
 
@@ -185,7 +186,7 @@ def create_backup_zip(
     """Create a zip backup based on the specified mode."""
     zip_fn = build_zipfn_name(source_dir, output_dir)
 
-    dbgln(f"zip={zip_fn}", 2, verbose)
+    dbgln(f"zip={zip_fn}, mode={backup_mode}", 2, verbose)
     if backup_mode == "full":
         files = collect_full_backup(source_dir, verbose)
     elif backup_mode == "visible":
@@ -217,21 +218,35 @@ def copy_to_dbxdir(zip_path: str, verbose: int = 0) -> bool :
         dbgln(f"empty zip_path, cannot archive")
         return False
 
-    # check env 
+    dbx_bak = delete_dbxzip(zip_path, verbose)
+    if dbx_bak is not None:
+        # copy zip_path into DBXDIR/dt/ghsv
+        run_shell_command(f"cp {zip_path} {dbx_bak}", verbose=verbose)
+        dbgln(f"Archived into {dbx_bak}")
+        run_shell_command(f"ls -ltrd {dbx_bak}", verbose=verbose, show_output = True)
+        
+    return True
+
+def delete_dbxzip(zip_path: str, verbose: int = 0) -> Optional[Path] :
+    if not zip_path:
+        dbgln(f"empty zip_path, cannot archive")
+        return None
+
+    # check env
     dbx_env="DBXDIR"
     dbx_dir=os.getenv(dbx_env, "None")
     if dbx_dir.casefold() == "None".casefold():
         dbgln(f"Missing {dbx_env} environment var. ")
-        return False
+        return None
 
     # check dir DBXDIR/dt/ghsv
     ghsv_dir=Path(dbx_dir, "dt/ghsv")
     if not ghsv_dir.exists():
         dbgln(f"Missing ghsv_dir={ghsv_dir}")
-        return False
+        return None
 
     # if exists
-    #  ls -ltr
+    #  ls -ltrd -> then rm -f
     dbx_bak=Path(ghsv_dir, zip_path)
     if dbx_bak.exists():
         run_shell_command(f"ls -ltrd {dbx_bak}", verbose=verbose, show_output = True)
@@ -240,14 +255,10 @@ def copy_to_dbxdir(zip_path: str, verbose: int = 0) -> bool :
         dbgln(f"executing [{cmd}]")
         run_shell_command(cmd, verbose=verbose)
 
-    # copy zip_path into DBXDIR/dt/ghsv
-    run_shell_command(f"cp {zip_path} {dbx_bak}", verbose=verbose)
-    dbgln(f"Archived into {dbx_bak}")
-    run_shell_command(f"ls -ltrd {dbx_bak}", verbose=verbose, show_output = True)
-    return True
+    return dbx_bak
 
 
-def main() -> None:
+def setup_parser():
     parser = argparse.ArgumentParser(description="Backup a folder with specified mode.")
     parser.add_argument("-s", "--src", "--source-dir", required=False,
                         dest="source_dir",
@@ -265,14 +276,22 @@ def main() -> None:
         help="Backup mode",
         default="uncommitted"
     )
-    parser.add_argument("-v", "--verbose", action="count", default=0
+    parser.add_argument("-v", action="count", default=0
                         , help="verbose, supports -vv for more verbose"
                         , dest="verbose")
+    parser.add_argument('--verbose', type=int, default=0, dest="verbose",
+                        help="Enable verbosity by specifying a number")
+
     parser.add_argument("--log-file", help="Optional log file for shell command outputs")
     parser.add_argument("-nodbx", "--no-dbxdir",
-        action="store_true", default=False, dest="no_dbx", 
+        action="store_true", default=False, dest="no_dbx",
         help="Do not copy into $DBXDIR/dt/ghsv folder")
 
+    return parser
+
+
+def main() -> None:
+    parser = setup_parser()
     args = parser.parse_args()
 
     try:
@@ -280,14 +299,18 @@ def main() -> None:
         if zip_path:
             print(f"Backup created: {zip_path}")
         else:
-             # RNTODO - delete this zip name and arrange for dbx-zip-deletion if allowed
              zip_fn = build_zipfn_name(args.source_dir, args.output_dir)
              delete_zipfn(zip_fn, args.verbose)
+             # RNTODO - delete this zip name and arrange for dbx-zip-deletion if allowed
 
         if args.no_dbx:
             dbgln(f"NOT backing up to $DBXDIR")
-        else:    
-            copy_to_dbxdir(zip_path, args.verbose)
+        else:
+            if zip_path:
+                copy_to_dbxdir(zip_path, args.verbose)
+            else:
+                delete_dbxzip(zip_path, args.verbose)
+
     except Exception as e:
         print(f"Backup failed: {e}")
         print(f"\nStack Trace: {traceback.format_exc()}")

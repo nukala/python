@@ -3,24 +3,10 @@ from datetime import datetime
 from pathlib import Path
 from PIL import Image
 from pillow_heif import register_heif_opener
+from ghsv import dbgln
 
 
 class HeicJpeg:
-	# jun09> newer version in ghsv
-	def dbgln(self, msg: str, level: int = 0):
-		if level < 0:
-			return
-
-		if level <= self.args.verbosity:
-			dbg_pfx = ' ' * level
-			# there is a one-line style RNTODO
-			nl = "\n"
-			if nl in msg:
-				nl = ""
-			nl=''
-			print(f"{dbg_pfx}{msg}{nl}")
-		return
-
 	def __init__(self):
 		parser = argparse.ArgumentParser(description="To convert HEIC (iPhone) to JPEG format. "
 													 "Does not overwrite existing files")
@@ -44,14 +30,14 @@ class HeicJpeg:
 		if not overwrite:
 			import os
 			if os.path.exists(jpg_filepath):
-				self.dbgln(f"{jpg_filepath} already exists, not overwriting", 0)
+				dbgln(f"{jpg_filepath} already exists, not overwriting", 0, self.args.verbosity)
 				return
 
 		try:
 			img = Image.open(heic_filepath)
 			img = img.convert('RGB')
 			img.save(jpg_filepath, 'jpeg')
-			self.dbgln(f"Converted {heic_filepath} to {jpg_filepath}", 2)
+			dbgln(f"Converted {heic_filepath} to {jpg_filepath}", 2, self.args.verbosity)
 		except Exception as e:
 			print(f"Error converting {heic_filepath}: {e}")
 
@@ -72,27 +58,27 @@ class HeicJpeg:
 		if mkdir:
 			output_path = Path(output_dir)
 			if not output_path.exists():
-				self.dbgln(f"\"{output_dir}\" does not exist. making!", 1)
+				dbgln(f"\"{output_dir}\" does not exist. making!", 1, self.args.verbosity)
 				# md parents as needed, don't barf if exists
 				output_path.mkdir(parents=True, exist_ok=True)
-		self.dbgln(f"output_dir=[{output_dir}]", 2)
+		dbgln(f"output_dir=[{output_dir}]", 2, self.args.verbosity)
 		return output_dir
 
 	def get_jpeg_filepath(self, dirname: str = None) -> str:
 		fname = self.args.jpeg
 		if fname is None:
-			self.dbgln(f"fname={fname} is None, using heic", 3)
+			dbgln(f"fname={fname} is None, using heic", 3, self.args.verbosity)
 			fname = self.args.input.split('.')[0]
-			self.dbgln(f"input={self.args.input}, fname={fname}", 4)
+			dbgln(f"input={self.args.input}, fname={fname}", 4, self.args.verbosity)
 		if ".jpg" in fname or ".jpeg" in fname:
 			pass
 		else:
-			self.dbgln(f"appending .jpeg", 3)
+			dbgln(f"appending .jpeg", 3, self.args.verbosity)
 			fname += ".jpeg"
 
 		if dirname:
 			fname = dirname + "/" + fname
-		self.dbgln(f"fname=[{fname}]", 2)
+		dbgln(f"fname=[{fname}]", 2, self.args.verbosity)
 		return fname
 
 
