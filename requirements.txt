@@ -21,7 +21,7 @@ pluggy==1.6.0
 pyclip==0.7.0
 Pygments==2.19.2
 PyInputPlus==0.2.12
-pypdf==6.4.0
+pypdf==6.6.0
 PySimpleValidate==0.2.12
 pytest==8.4.2
 python-dateutil==2.9.0.post0
