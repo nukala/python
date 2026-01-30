@@ -25,6 +25,13 @@ TBC = -123_456_789
 
 class FtbIrsUtils:
   @staticmethod
+  def bracket_str(row) -> str:
+    """
+    Show *ONLY* interesting portions, not the computed to tobe-computed portions
+    """
+    return f"{row[0]} -> {row[1]} @{row[3]:.1f}% "
+
+  @staticmethod
   def find_row(inc, ary, verbose:int = 0, desc:str = 'IRS'):
     for i in ary:
       min_amt = i[0]
@@ -32,7 +39,7 @@ class FtbIrsUtils:
 
       if min_amt <= inc <= max_amt:
         if verbose > 0:
-          print(f"   {desc}=${inc}, bracket={i}")
+          print(f"   {desc}=${inc}, bracket={FtbIrsUtils.bracket_str(i)}")
         return i
 
     return None
@@ -57,14 +64,14 @@ class FtbIrsUtils:
     payment = (fraction*over) + threshold
     calc_str = ''
     if verbose > 1 or show_next:
-      calc_str = f"   {desc}={inc}, orig={orig_inc}, over={over}, threshold={threshold}, fraction={fraction:.4f}"
+      calc_str = f"   {desc}={inc:,}, orig={orig_inc:,}, over={over:,}, threshold={threshold:,}, fraction={fraction:.4f}"
       calc_str += f", payment={payment:.2f}"
  
       next_min = r[1] + 1
       next_row = FtbIrsUtils.find_row(next_min, ary, 0, desc)
       if verbose > 3:
         print(f"   next_min={next_min}, next_row={next_row}")
-      calc_str += f"  next={next_row[3]:.2f}%"
+      calc_str += f", next={next_row[3]:.2f}%"
 
       print(f"{calc_str}\n")
     
@@ -84,10 +91,11 @@ class FtbIrsUtils:
         print(f"  s={s}, curr={curr}, old_total={total}")
       total = round(total + curr, 2)
 
-    if verbose > 5:
+    if verbose > 3:
+      ## Print array as a formatted table!
       import pprint
       pretty_str = pprint.pformat(s_ary, indent=2, underscore_numbers=True)
-      print(f"processed = {pretty_str}")
+      print(f" After processing array = {pretty_str}")
 
     for s in s_ary:
       typed_threshold = s[2]
@@ -198,14 +206,15 @@ class FtbIrs2026(FtbIrs2025):
     self.irs_std = 32_200
 
     # https://www.msn.com/en-us/money/taxes/the-new-irs-tax-brackets-for-2026-are-here-see-where-you-fit-in/ar-AA1Oa7ms
+    # also = https://taxfoundation.org/data/all/federal/2026-tax-brackets/
     self.irs = [
         [0, 24_800, 0, 10],
         [24_800, 100_800, 2_480, 12],
-        [100_800, 211_400, 11_600, 22],
+        [100_800, 211_400, TBC, 22],
         [211_400, 403_550, 35_932, 24],
         [403_550, 512_450, 82_048, 32],
         [512_450, 768_700, 116_896, 35],
-        [768_700, INFINITY, 206_583.50, 37]
+        [768_700, INFINITY, TBC, 37]
     ]
 
 

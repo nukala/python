@@ -67,14 +67,14 @@ def dbgln(msg: str, level: int = 0, verbosity: int = 0):
         print(f"{pfx}{msg}", end=eol)
 
 
-def run_shell_command(command: str, timeout: int = 30, verbose: int = 0,
+def run_shell_command(command: str, timeout: int = 30, verbosity: int = 0,
                       show_output = False, log_file: Optional[str] = None) -> str:
     """Execute a shell command with error handling, timeout, and optional logging."""
     try:
         result = subprocess.run(
             command, shell=True, capture_output=True, text=True, timeout=timeout
         )
-        dbgln(f"ret={result.returncode}", 1, verbose)
+        dbgln(f"ret={result.returncode}", 1, verbosity)
         if result.returncode != 0:
             raise subprocess.CalledProcessError(
                 result.returncode, command, result.stderr
@@ -103,7 +103,7 @@ def run_shell_command(command: str, timeout: int = 30, verbose: int = 0,
 
 def get_uncommitted_files(source_dir: str,
                           log_file: Optional[str] = None,
-                          verbose: int = 0) -> List[str]:
+                          verbosity: int = 0) -> List[str]:
     """Get list of uncommitted files in a git repository."""
     os.chdir(source_dir)
     try:
@@ -123,29 +123,29 @@ def get_uncommitted_files(source_dir: str,
 
 
 def collect_full_backup(source_dir: str,
-                        verbose: int = 0) -> List[str]:
+                        verbosity: int = 0) -> List[str]:
     """Collect all files including hidden and ignored files."""
     # files: List[str] = []
     # for root, _, filenames in os.walk(source_dir):
     #     for fname in filenames:
     #         files.append(os.path.join(root, fname))
     cmd = "fd -H -tf -E venv -E target -E __pycache__ -E '.idea' -E '.pytest*' -E '*.zip' -E '*.env'  "
-    return run_shell_command(cmd, verbose=verbose).split('\n')
+    return run_shell_command(cmd, verbosity=verbosity).split('\n')
 
-def bad_start(fname: str, verbose:int = 0) -> bool:
+def bad_start(fname: str, verbosity:int = 0) -> bool:
     bad_begins=[ ".", "__pycache__", "venv"]
     reject=False
     for bb in bad_begins:
         if fname.startswith(bb):
             reject=True
-            if verbose > 2:
-                print(f"{' ' * verbose}rejecting {fname}, bb={bb}")
+            if verbosity > 2:
+                print(f"{' ' * verbosity}rejecting {fname}, bb={bb}")
             break
 
     return reject
 
 def collect_visible_non_ignored(source_dir: str,
-                                verbose: int = 0) -> List[str]:
+                                verbosity: int = 0) -> List[str]:
     """Collect visible files, excluding .git and hidden files."""
     # files: List[str] = []
     # git_dir = os.path.join(source_dir, ".git")
@@ -157,7 +157,7 @@ def collect_visible_non_ignored(source_dir: str,
     #             files.append(os.path.join(root, fname))
 
     cmd="fd -tf -E target -E __pycache__ -E venv -E '*.zip' -E out -E '*.env' "
-    return run_shell_command(cmd, verbose=verbose).split('\n')
+    return run_shell_command(cmd, verbosity=verbosity).split('\n')
 
 def build_zipfn_name(source_dir: str, output_dir: str = ".") -> str:
     """Create a zip backup based on the specified mode."""
@@ -170,29 +170,29 @@ def build_zipfn_name(source_dir: str, output_dir: str = ".") -> str:
     zip_path = os.path.join(output_dir, zip_name)
     return zip_path
 
-def delete_zipfn(zip_fn: str, verbose: int = 0):
+def delete_zipfn(zip_fn: str, verbosity: int = 0):
     if Path(zip_fn).exists():
         cmd=f"rm -f {zip_fn}"
         dbgln(f"executing [{cmd}]")
-        run_shell_command(cmd, verbose=verbose)    
+        run_shell_command(cmd, verbosity=verbosity)    
 
 def create_backup_zip(
         source_dir: str,
         backup_mode: Literal["full", "visible", "uncommitted"],
         output_dir: str,
-        verbose: int = 0,
+        verbosity: int = 0,
         log_file: Optional[str] = None
 ) -> Optional[str]:
     """Create a zip backup based on the specified mode."""
     zip_fn = build_zipfn_name(source_dir, output_dir)
 
-    dbgln(f"zip={zip_fn}, mode={backup_mode}", 2, verbose)
+    dbgln(f"zip={zip_fn}, mode={backup_mode}", 2, verbosity)
     if backup_mode == "full":
-        files = collect_full_backup(source_dir, verbose)
+        files = collect_full_backup(source_dir, verbosity)
     elif backup_mode == "visible":
-        files = collect_visible_non_ignored(source_dir, verbose)
+        files = collect_visible_non_ignored(source_dir, verbosity)
     elif backup_mode == "uncommitted":
-        files = get_uncommitted_files(source_dir, log_file, verbose)
+        files = get_uncommitted_files(source_dir, log_file, verbosity)
     else:
         raise ValueError("Invalid backup mode")
 
@@ -200,60 +200,62 @@ def create_backup_zip(
         print("No files to backup.")
         return None
 
-    dbgln(f"Backing up {len(files)} files. ", 1, verbose)
-    dbgln(f"files = {files}.{len(files)}", 2, verbose)
+    dbgln(f"Backing up {len(files)} files. ", 1, verbosity)
+    dbgln(f"files = {files}.{len(files)}", 2, verbosity)
 
-    delete_zipfn(zip_fn, verbose)
+    delete_zipfn(zip_fn, verbosity)
     ctr:int = 0
     with zipfile.ZipFile(zip_fn, "w", zipfile.ZIP_DEFLATED) as zf:
         for file in files:
             ctr += 1
-            dbgln(f"{ctr:3d} writing into zip file={file}", 3, verbose)
+            dbgln(f"{ctr:3d} writing into zip file={file}", 3, verbosity)
             zf.write(file)
     return zip_fn
 
 
-def copy_to_dbxdir(zip_path: str, verbose: int = 0) -> bool :
+def copy_to_dbxdir(zip_path: str, verbosity: int = 0) -> bool :
     if not zip_path:
         dbgln(f"empty zip_path, cannot archive")
         return False
 
-    dbx_bak = delete_dbxzip(zip_path, verbose)
+    dbx_bak = delete_dbxzip(zip_path, verbosity)
     if dbx_bak is not None:
         # copy zip_path into DBXDIR/dt/ghsv
-        run_shell_command(f"cp {zip_path} {dbx_bak}", verbose=verbose)
+        run_shell_command(f"cp {zip_path} {dbx_bak}", verbosity=verbosity)
         dbgln(f"Archived into {dbx_bak}")
-        run_shell_command(f"ls -ltrd {dbx_bak}", verbose=verbose, show_output = True)
-        
+        run_shell_command(f"ls -ltrd {dbx_bak}", verbosity=verbosity, show_output = True)
+
     return True
 
-def delete_dbxzip(zip_path: str, verbose: int = 0) -> Optional[Path] :
+def delete_dbxzip(zip_path: str, verbosity: int = 0) -> Optional[Path] :
+    dbgln(f"delete_dbxzip: deleting {zip_path}", 2, verbosity)
     if not zip_path:
-        dbgln(f"empty zip_path, cannot archive")
+        dbgln(f"delete_dbxzip: empty zip_path, cannot archive")
         return None
 
     # check env
     dbx_env="DBXDIR"
     dbx_dir=os.getenv(dbx_env, "None")
     if dbx_dir.casefold() == "None".casefold():
-        dbgln(f"Missing {dbx_env} environment var. ")
+        dbgln(f"delete_dbxzip: Missing {dbx_env} environment var. ")
         return None
 
     # check dir DBXDIR/dt/ghsv
     ghsv_dir=Path(dbx_dir, "dt/ghsv")
     if not ghsv_dir.exists():
-        dbgln(f"Missing ghsv_dir={ghsv_dir}")
+        dbgln(f"delete_dbxzip: Missing ghsv_dir={ghsv_dir}")
         return None
 
     # if exists
     #  ls -ltrd -> then rm -f
     dbx_bak=Path(ghsv_dir, zip_path)
+    dbgln(f"delete_dbxzip: dbx_bak={dbx_bak}", 5, verbosity)
     if dbx_bak.exists():
-        run_shell_command(f"ls -ltrd {dbx_bak}", verbose=verbose, show_output = True)
+        run_shell_command(f"ls -ltrd {dbx_bak}", verbosity=verbosity, show_output = True)
         #print(f"Please remove manually. \nrm - {dbx_bak}")
         cmd=f"rm -f {dbx_bak}"
         dbgln(f"executing [{cmd}]")
-        run_shell_command(cmd, verbose=verbose)
+        run_shell_command(cmd, verbosity=verbosity)
 
     return dbx_bak
 
@@ -277,9 +279,9 @@ def setup_parser():
         default="uncommitted"
     )
     parser.add_argument("-v", action="count", default=0
-                        , help="verbose, supports -vv for more verbose"
-                        , dest="verbose")
-    parser.add_argument('--verbose', type=int, default=0, dest="verbose",
+                        , help="verbosity, supports -vv for more verbosity"
+                        , dest="verbosity")
+    parser.add_argument('--verbosity', type=int, default=0, dest="verbosity",
                         help="Enable verbosity by specifying a number")
 
     parser.add_argument("--log-file", help="Optional log file for shell command outputs")
@@ -293,24 +295,23 @@ def setup_parser():
 def main() -> None:
     parser = setup_parser()
     args = parser.parse_args()
+    dbgln(f"parsed args={args}", 2, args.verbosity)
 
     try:
-        zip_path = create_backup_zip(args.source_dir, args.mode, args.output_dir, args.verbose, args.log_file)
+        zip_path = create_backup_zip(args.source_dir, args.mode, args.output_dir, args.verbosity, args.log_file)
         if zip_path:
             print(f"Backup created: {zip_path}")
         else:
              zip_fn = build_zipfn_name(args.source_dir, args.output_dir)
-             delete_zipfn(zip_fn, args.verbose)
+             dbgln(f"deleting {zip_fn} in local as well as dbxdir", 1, args.verbosity)
+             delete_zipfn(zip_fn, args.verbosity)
              # RNTODO - delete this zip name and arrange for dbx-zip-deletion if allowed
+             delete_dbxzip(zip_fn, args.verbosity)
 
         if args.no_dbx:
             dbgln(f"NOT backing up to $DBXDIR")
         else:
-            if zip_path:
-                copy_to_dbxdir(zip_path, args.verbose)
-            else:
-                delete_dbxzip(zip_path, args.verbose)
-
+            copy_to_dbxdir(zip_path, args.verbosity)
     except Exception as e:
         print(f"Backup failed: {e}")
         print(f"\nStack Trace: {traceback.format_exc()}")

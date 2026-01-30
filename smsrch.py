@@ -18,14 +18,14 @@ import uuid
 #  choose betweem sm and nr
 ############################################################################
 
-class ToUUID:
+@staticmethod
+def copy_to_clipboard(some_string, debug=False, verbose=False):
+  """
+  " Copies the specified some_string into clipboard in a OS independent fashion
+  """
+  pc.copy(some_string)
 
-  @staticmethod
-  def copy_to_clipboard(some_string, debug=False, verbose=False):
-    """
-    " Copies the specified some_string into clipboard in a OS independent fashion
-    """
-    pc.copy(some_string)
+class ToUUID:
 
   def __init__(self, arg):
     self.uuid = uuid.UUID(arg)

@@ -5,6 +5,7 @@
 # WIP - due to mmap
 #     - yucky way in which files are passed.
 #        illegal arguments like -xxx are now considered files and then no help
+#     - add option to ls -ltr also
 ###############################################################################
 
 from argparse import ArgumentParser

@@ -3,6 +3,7 @@
 # This script compresses JPEG images with configurable quality settings,
 # measures space savings, and image quality differences.
 
+# RNTODO - fix for python jpeg_compressor.py -o . -v ~/Desktop/26jan03-ltcg.png (filenames, then png)
 import os
 import sys
 import time

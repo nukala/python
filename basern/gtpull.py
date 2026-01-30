@@ -111,17 +111,17 @@ def show_gitlast_changes(root, logf = None):
 def git_path(root, path):
   return root + os.sep + path
 
-def copy_to_clipboard(name, debug = False, verbose = False):
-  """
-  " Copies the specified name into clipboard in a OS independent fashion
-  """
-  mtag = GetMtag().to_string()
-  cmd = None
-  if mtag == "PC":
-    cmd = "clip"
-  elif mtag == "MacOS":
-    cmd = "pbcopy"
-  do_run(f"echo {name} | tr -d \"\n\" | {cmd}", None, show_cmd = debug, show_result = debug)
+# def copy_to_clipboard(name, debug = False, verbose = False):
+#   """
+#   " Copies the specified name into clipboard in a OS independent fashion
+#   """
+#   mtag = GetMtag().to_string()
+#   cmd = None
+#   if mtag == "PC":
+#     cmd = "clip"
+#   elif mtag == "MacOS":
+#     cmd = "pbcopy"
+#   do_run(f"echo {name} | tr -d \"\n\" | {cmd}", None, show_cmd = debug, show_result = debug)
 
 
 def main(args):
@@ -178,6 +178,7 @@ def main(args):
   elif yes_no(f'remove {logf.name} (y/n): ') == 0:
     os.remove(logf.name)
   else:
+    from smsrch import copy_to_clipboard
     copy_to_clipboard(logf.name, debug=(args.verbose>1))
 
   if args.verbose > 0:

@@ -1,5 +1,5 @@
 ########################################################################
-# To copy command line args (all of them) into clipboard in a platform neutral way
+# WIP - To copy command line args (all of them) into clipboard in a platform neutral way
 #
 ########################################################################
 

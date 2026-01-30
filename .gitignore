@@ -510,3 +510,5 @@ gradle-app.setting
 # End of https://www.toptal.com/developers/gitignore/api/vim,jenv,xcode,maven,emacs,gradle,java,haskell,python,intellij+all,macos,windows,linux
 
 .ghsvd
+.etf_cache/
+tests/*.jpg
