@@ -5,7 +5,8 @@
 # WIP - due to mmap
 #     - yucky way in which files are passed.
 #        illegal arguments like -xxx are now considered files and then no help
-#     - add option to ls -ltr also
+#     - add option to ls -ltr also 
+#        l ~/desktop/jan31-wu2axis-p1,2.pdf /mnt/c/download/cloud/OneDrive/trip/jan31-wu2axis-p1,2.pdf /mnt/c/download/cloud/Dropbox/trip/jan31-wu2axis-p1,2.pdf /mnt/c/Users/ravi/Box/trip/jan31-wu2axis-p1,2.pdf | sed 's/-[rwx].*None //g'; check numeric and print all elems after?. VERIFY ON mac
 ###############################################################################
 
 from argparse import ArgumentParser

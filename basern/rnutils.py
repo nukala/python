@@ -277,6 +277,8 @@ def adjust_winpath(file_name:str, verbose:int = 0) -> str:
     drives = {
         "/c/": "C:/",
         "/cygdrive/c/": "C:/",
+        "/mnt/cygdrive/c/": "C:/",
+        "/mnt/c/": "C:/",
         "/d/": "D:/",
         "/cygdrive/d/": "D:/",
     }
