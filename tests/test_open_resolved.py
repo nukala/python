@@ -2,6 +2,8 @@ import unittest
 import subprocess
 from pathlib import Path
 from unittest.mock import patch, mock_open
+
+from basern import rnutils
 from basern.rnutils import open_resolved
 
 class TestOpenResolved(unittest.TestCase):
@@ -71,52 +73,52 @@ class TestOpenResolved(unittest.TestCase):
                 pass
             mock_adjust.assert_not_called()
 
-    def test_win32_calls_resolve(self):
-        """On win32, resolve_with_cygpath is called before open."""
+    def test_win32_calls_adjust_winpath(self):
+        """On win32, adjust_winpath is called before open."""
         mock_file = mock_open(read_data=b"data")
         resolved  = Path("C:\\real\\file.txt")
         with patch("sys.platform", "win32"), \
              patch("builtins.open", mock_file), \
-             patch("resolve_with_cygpath", return_value=resolved) as mock_resolve:
+             patch.object(rnutils, "adjust_winpath", return_value=resolved) as mock_adjust:
             with open_resolved("some/file.txt"):
                 pass
-            mock_resolve.assert_called_once_with("some/file.txt")
+            mock_adjust.assert_called_once_with("some/file.txt", 0)
             mock_file.assert_called_once_with(
                 resolved, mode="rb", encoding=None
             )
 
-    def test_cygwin_calls_resolve(self):
-        """On cygwin, resolve_with_cygpath is called before open."""
+    def test_cygwin_calls_adjust_winpath(self):
+        """On cygwin, adjust_winpath is called before open."""
         mock_file = mock_open(read_data=b"data")
         resolved  = Path("/cygdrive/c/real/file.txt")
         with patch("sys.platform", "cygwin"), \
              patch("builtins.open", mock_file), \
-             patch("resolve_with_cygpath", return_value=resolved) as mock_resolve:
+             patch.object(rnutils, "adjust_winpath", return_value=resolved) as mock_adjust:
             with open_resolved("some/file.txt"):
                 pass
-            mock_resolve.assert_called_once_with("some/file.txt")
+            mock_adjust.assert_called_once_with("some/file.txt", 0)
             mock_file.assert_called_once_with(
                 resolved, mode="rb", encoding=None
             )
 
-    def test_linux_skips_resolve(self):
+    def test_linux_skips_adjust(self):
         """On linux, resolve_with_cygpath is never called."""
         mock_file = mock_open(read_data=b"data")
         with patch("sys.platform", "linux"), \
              patch("builtins.open", mock_file), \
-             patch("resolve_with_cygpath") as mock_resolve:
+             patch.object(rnutils, "adjust_winpath") as mock_adjust:
             with open_resolved("some/file.txt"):
                 pass
-            mock_resolve.assert_not_called()
+            mock_adjust.assert_not_called()
 
-    def test_cygwin_symlink_resolved_before_open(self):
+    def test_cygwin_symlink_adjust_winpath_before_open(self):
         """Resolved path — not original — is what gets passed to open()."""
         original  = "dir1/yy/file.txt"
         resolved  = Path("C:\\real\\xx\\file.txt")
         mock_file = mock_open(read_data=b"content")
 
         with patch("sys.platform", "win32"), \
-             patch("resolve_with_cygpath", return_value=resolved), \
+             patch.object(rnutils, "adjust_winpath", return_value=resolved), \
              patch("builtins.open", mock_file):
             with open_resolved(original, "rb") as f:
                 data = f.read()
