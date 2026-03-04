@@ -1,10 +1,12 @@
 from basern.yesno import bool_yesno
+from pathlib import Path
+from typing import IO
 
 import datetime
 import os
 import subprocess
+import sys
 import time
-
 
 ######################
 # Bunch of utility methods. Some may be excessive - this being python.
@@ -266,12 +268,53 @@ def ask_then_run(cmd, logf, inpt=None, special_env=None, show_result=True, show_
 
     return stat
 
+def open_resolved(path: Path | str, mode: str = "rb", encoding: str = None, verbose: int = 0) -> IO:
+  """
+  Open a file, resolving Cygwin WSL-format symlinks on Windows/Cygwin
+  before opening. On all other platforms, opens directly.
 
-def adjust_winpath(file_name:str, verbose:int = 0) -> str:
+  Args:
+      path:     The path to open, as a Path or str.
+      mode:     File mode, e.g. "rb", "r", "w". Defaults to "rb".
+      encoding: Encoding for text modes. Ignored for binary modes.
+      verbose: Verbosity level.
+
+  Returns:
+      An open file object (binary or text depending on mode).
+
+  Raises:
+      OSError: If the file cannot be found or opened.
+      subprocess.CalledProcessError: If cygpath fails (Cygwin only).
+
+  Examples:
+      with open_resolved("dir/yy/file.txt", "rb") as f:
+          data = f.read()
+
+      with open_resolved("dir/yy/file.txt", "r", encoding="utf-8") as f:
+          text = f.read()
+  """
+
+  resolved: Path = (
+    adjust_winpath(str(path), verbose)
+    if sys.platform in ("win32", "cygwin")
+    else Path(path)
+  )
+
+  if verbose >= 3:
+      print(f"Opening {resolved}")
+
+  return open(resolved, mode=mode, encoding=encoding)
+
+
+def adjust_winpath(file_name:str, verbose:int = 0) -> Path:
     """
     Adjusts file_name into WINDOwS friendly version.
     Seems like `ln -s ` only WORKS when using `CYGWIN=winsymlinks:nativestrict ln -s FROM TO`
     """
+
+    if sys.platform not in ("win32", "cygwin"):
+        return Path(file_name)
+
     adjusted = file_name
 
     drives = {
@@ -286,27 +329,75 @@ def adjust_winpath(file_name:str, verbose:int = 0) -> str:
         if file_name.startswith(key):
             repl = drives.get(key)
             if verbose > 1:
-                print(f"[{file_name}] relacing={key} with={repl}")
+                print(f"[{file_name}] replacing={key} with={repl}")
             file_name = file_name.replace(key, repl)
 
-    # if file_name.startswith("/c/"):
-    #     file_name = file_name.replace("/c/", "C:/")
-    # if file_name.startswith("/cygdrive/c/"):
-    #     file_name = file_name.replace("/cygdrive/c/", "C:/")
     if verbose >= 1:
-        print(f"[{adjusted}] after replacements=[{file_name}]\n")
-    fn = file_name
-    if os.path.islink(file_name):
-        fn = os.path.readlink(file_name)
-        # BROKEN, UNTESTABLE code for links
-        if verbose > 1:
-            print(f" file=\"{file_name}\" is a link, resolved to={fn}\n")
-    else:
-        fn = os.path.realpath(file_name)
-        if verbose > 1:
-            print(f" realpath={fn}, for file={file_name}\n")
+        print(f"[{adjusted}] after replacements=[{file_name}]")
 
-    return fn
+    # fn = file_name
+    # if os.path.islink(file_name):
+    #     fn = os.path.readlink(file_name)
+    #     # BROKEN, UNTESTABLE code for links
+    #     if verbose > 1:
+    #         print(f" file=\"{file_name}\" is a link, resolved to={fn}\n")
+    # else:
+    #     # from pathlib import Path
+    #     # real = Path(file_name).resolve()
+    #     rs = os.lstat(file_name)
+    #     if verbose > 1:
+    #         print(f" resolved={rs}")
+    #     fn = os.path.realpath(file_name)
+    #     if verbose > 1:
+    #         print(f" realpath={fn}, for file={file_name}\n")
+
+    replaced_path = resolve_with_cygpath(file_name, verbose)
+
+    # if not os.path.exists(replaced_path):
+    #   raise FileNotFoundError(f"No such file \"{replaced_path}\" \n")
+
+    return replaced_path
+
+def resolve_with_cygpath(path: Path | str, verbose:int = 0) -> Path:
+    """
+    Resolve a path that may contain Cygwin WSL-format symlinks.
+
+    Attempts os.stat() first — the fast path for regular files/dirs.
+    On winerror 1920 (unresolved reparse point), delegates to cygpath.
+    All other OSErrors (not found, permission denied) are re-raised.
+
+    Args:
+        path: The path to resolve, as a Path or str.
+
+    Returns:
+        A resolved absolute Path.
+
+    Raises:
+        OSError: If the path doesn't exist or is inaccessible for
+                 reasons other than an unresolved reparse point.
+        subprocess.CalledProcessError: If cygpath fails.
+    """
+    p: Path = Path(path)
+
+    try:
+        os.stat(p)
+        return p
+    except OSError as e:
+        if e.winerror != 1920:
+            raise
+
+        if verbose >= 2:
+            print(f"[{path}] failed to stat, e=[{e}], executing cygpath\n")
+        raw: str = subprocess.check_output(
+            ["cygpath", "-aw", p.as_posix()],
+            stderr=subprocess.DEVNULL,
+            text=True,                   # decode stdout automatically
+        ).strip()
+
+        resolved: Path = Path(raw)
+        os.stat(resolved)                # validate — raises OSError if still broken
+        return resolved
+
 
 def get_pwd(use_tilda:bool = True):
     """

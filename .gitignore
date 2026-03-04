@@ -512,3 +512,4 @@ gradle-app.setting
 .ghsvd
 .etf_cache/
 tests/*.jpg
+tests/*.pdf

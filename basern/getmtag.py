@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-import os
-import platform
-
 import sys
+
+def is_windows() -> bool:
+  """
+  Returns True if system is a Windows machine
+  """
+  # platform.system shows Windows, CYGWIN_NT-* etc!
+
+  return sys.platform in ("win32", "cygwin", "Windows")
 
 
 class GetMtag:
@@ -15,9 +20,7 @@ class GetMtag:
       self.mtag = "unix"
     elif sys.platform.startswith('aix'):
       self.mtag = "unix"
-    elif sys.platform.startswith('win32'):
-      self.mtag = "PC"
-    elif sys.platform.startswith('cygwin'):
+    elif is_windows():
       self.mtag = "PC"
     elif sys.platform.startswith('darwin'):
       self.mtag = "MacOS"
