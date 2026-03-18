@@ -3,6 +3,7 @@
 ##
 import psutil
 import platform
+import sys
 from datetime import datetime
 
 def get_size(bytes, suffix="B"):
@@ -140,3 +141,5 @@ for gpu in gpus:
 
 print(tabulate(list_gpus, headers=("id", "name", "load", "free memory", "used memory", "total memory",
                                    "temperature", "uuid")))
+
+print(f"GIL(interpreter) = {sys._is_gil_enabled()}")

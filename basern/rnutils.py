@@ -13,7 +13,7 @@ import time
 # Almost rehash of similarly named java-equivalent
 #########
 
-def is_empty(string):
+def is_empty(string:str):
     """
     True only if the specified string is empty
     """
@@ -28,13 +28,14 @@ def is_not_empty(string):
     """
     return not is_empty(string)
 
-
-def is_exists(filename):
+def is_exists(ff: str|Path):
     """
-    True if filename is not-empty AND file exists
-    :param filename:
+    True if ff is not-empty AND file exists
+    :param ff:
     :return:
     """
+    filename = str(ff)
+    
     try:
         return is_not_empty(filename) and os.path.exists(filename)
     except FileNotFoundError:
@@ -156,6 +157,88 @@ def do_nap(ss, log=None):
     time.sleep(ss)
 
 
+def _parse_num_bytes(num_bytes: int | str) -> int:
+    """
+    Coerce num_bytes to a non-negative int.
+
+    Accepts plain ints or numeric strings (e.g. '1024').
+    Floats are explicitly rejected — bytes are always whole numbers.
+
+    Raises:
+        TypeError:  If the value is a float, or cannot be converted at all.
+        ValueError: If the value is a valid type but negative, or a
+                    non-numeric string (e.g. 'abc').
+    """
+    if isinstance(num_bytes, float):
+        raise TypeError(
+            f"num_bytes must be an int or numeric string, not float. "
+            f"Use int(value) to truncate if intentional."
+        )
+    try:
+        parsed = int(num_bytes)
+    except (ValueError, TypeError) as exc:
+        raise type(exc)(
+            f"num_bytes must be an int or numeric string, "
+            f"got {type(num_bytes).__name__!r} with value {num_bytes!r}"
+        ) from exc
+
+    if parsed < 0:
+        raise ValueError(f"num_bytes must be >= 0, got {parsed}")
+
+    return parsed
+
+
+def bytes_to_kb(num_bytes: int | str) -> float:
+    """Convert bytes to kilobytes."""
+    return _parse_num_bytes(num_bytes) / 1024
+
+
+def bytes_to_mb(num_bytes: int | str) -> float:
+    """Convert bytes to megabytes."""
+    return _parse_num_bytes(num_bytes) / (1024 * 1024)
+
+
+##### Write Python utility functions and unit tests to:
+# Convert a byte count (int | str) to a human-readable KB or MB string, switching to MB at a configurable threshold (default 1024 KB). Decimal precision is also configurable.
+# Centralise input validation in a private helper: reject floats and non-convertible types with TypeError, negatives and non-numeric strings with ValueError.
+# Functions max 10–15 lines, fully typed.
+# Tests use unittest only, covering valid int and str inputs, threshold boundaries, all TypeError and ValueError cases, and zero.
+def format_bytes(
+    num_bytes: int | str,
+    mb_threshold_kb: float = 1024.0,
+    decimal_places: int = 2,
+) -> str:
+    """
+    Convert a byte count to a human-readable KB or MB string.
+
+    Displays in MB when the KB value meets or exceeds mb_threshold_kb,
+    otherwise displays in KB.
+
+    Args:
+        num_bytes:        Raw byte count as int or numeric string. Must be >= 0.
+        mb_threshold_kb:  KB value at which to switch to MB (default 512 KB).
+        decimal_places:   Number of decimal places in the output (default 2).
+
+    Returns:
+        Formatted string such as '1.23 MB' or '456.00 KB'.
+
+    Raises:
+        TypeError:  If num_bytes is a float or a non-convertible type.
+        ValueError: If num_bytes is negative, a non-numeric string,
+                    or decimal_places is negative.
+    """
+    if decimal_places < 0:
+        raise ValueError(f"decimal_places must be >= 0, got {decimal_places}")
+
+    parsed = _parse_num_bytes(num_bytes)
+    kb_value = bytes_to_kb(parsed)
+
+    if kb_value >= mb_threshold_kb:
+        mb_value = bytes_to_mb(parsed)
+        return f"{mb_value:.{decimal_places}f} MB"
+
+    return f"{kb_value:.{decimal_places}f} KB"
+
 def elapsed_seconds(start):
     return f"elapsed={round(time.time() - start, 2)} seconds"
 
@@ -164,6 +247,25 @@ def elapsed_seconds(start):
 # run/exec helpers
 ################
 def getoutput_from_run(cmd, logf, show_cmd=False, show_result=True, show_output=False, show_error=False):
+    """
+    Preferred way to execute shell commands (why?)
+
+    Args:
+        cmd: Shell command to execute.
+        logf: File to write logs into (None-able)
+        show_cmd: Show the command being exected (default False)
+        show_result: Show result (default True)
+        show_output: Show output (default False)
+        show_error: Show error (default False)
+
+    Returns:
+        dict:
+            returncode: command's execution status
+            stdout: output from the command
+            stderr: its error if any
+            exception: Exception thrown by code if any
+            elapsed: rounded to 2 decimals execution duration
+    """
     start = time.time()
     out = None
     err = None

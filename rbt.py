@@ -7,19 +7,17 @@ from argparse import ArgumentParser
 import send2trash
 
 from basern.getmtag import GetMtag
-from basern.rnutils import do_run
-from basern.rnutils import is_exists
+from basern.rnutils import is_exists, getoutput_from_run, format_bytes
 from basern.yesno import bool_yesno
 from ghsv import dbgln
+from md5 import Md5
 
 
 #######################################################
 # Remove files by sending to "RecycleBin" or "Trash", hence the acronym
 #
 # Soon:
-#  verify actual deletion
 #  directory support
-#  argparse and help
 # https://github.com/arsenetar/send2trash/blob/master/send2trash/__main__.py
 # for filename in args.files:
 #  cleanup (real) rbt?
@@ -39,7 +37,16 @@ class Rbt:
     def do_list(fn: str, verbosity: int = 0):
       cmd = f"ls -ltr \"{fn}\" "
       dbgln(f"Executing [{cmd}]", 2, verbosity)
-      do_run(cmd, logf=None, show_result=False)
+      lsl = getoutput_from_run(cmd, logf=None, show_result=False, show_output=False)
+      parsed = Md5.parse_lsl(lsl['stdout'], raw_byte_count=False, verbose=verbosity)
+      # if verbosity >= 2:
+      #     print(f" parsed=[{parsed}]")
+      # numb = parsed.split(' ')[0]
+      # sz = format_bytes(numb) + " "
+      # parsed = sz + " ".join(parsed.split(' ')[1:])
+
+      msum = Md5().process_inline(fn, verbosity)
+      print(f"{msum}  {parsed}")
 
     def __init__(self):
       self.mtag = GetMtag().to_string()

@@ -12,6 +12,7 @@ from argparse import ArgumentParser
 
 import hashlib
 import mmap
+from basern.rnutils import format_bytes
 
 class Md5:
 
@@ -42,7 +43,8 @@ class Md5:
 
         return hasher.hexdigest()
 
-    def process_inline(self, file_name: str, verbose: int = 0):
+    @staticmethod
+    def process_inline(file_name: str, verbose: int = 0):
         if verbose > 0:
             print(f"inline: Input filename=[{file_name}]")
 
@@ -82,7 +84,7 @@ class Md5:
             self.parsed.short = True
 
     @staticmethod
-    def parse_lsl(lsl_str: str, verbose: int = 0):
+    def parse_lsl(lsl_str: str, raw_byte_count = True, verbose: int = 0):
         """
         Parses ls -ltr output, removes permissions and owner-group details.
         Shows only size and modification dates. Filename too
@@ -91,6 +93,12 @@ class Md5:
           -rwxr-xr-x 1 ravi None 1690 Nov 10 14:13 FILE_NAME
         becomes
           1690 Nov 10 14:13 FILE_NAME
+
+        Args:
+            lsl_str: String output from `ls -ltr FN`
+            raw_byte_count: show count as bytes (default True)
+                            False - formats the size in KB and MB
+            verbose: show verbose output
         """
         if verbose > 1:
             print(f"Input lsl=[{lsl_str}]")
@@ -100,7 +108,11 @@ class Md5:
         if num <= 0:
             return ""
 
-        parsed = " ".join(parts[4:])
+        if raw_byte_count:
+            parsed = " ".join(parts[4:])
+        else:
+            sz = format_bytes(parts[4]) + " "
+            parsed = sz + " ".join(parts[5:])
 
 #        from basern.getmtag import is_windows
 #        if is_windows():
@@ -136,7 +148,8 @@ if __name__ == "__main__":
             if msum.parsed.short:
                 print(f"{the_hash}", end=f"{end}")
                 if msum.parsed.lsltr:
-                    from basern.rnutils import getoutput_from_run
+                    from basern.rnutils import getoutput_from_run, format_bytes
+
                     lsl = getoutput_from_run(['ls', '-ltr', fname], None,
                                              show_result=False, show_output=False, show_error=False)['stdout']
                     print(f"  {msum.parse_lsl(lsl, msum.parsed.verbose)}")
