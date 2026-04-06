@@ -35,6 +35,8 @@ class HeicJpeg:
 
 		try:
 			img = Image.open(heic_filepath)
+			print(f"img={img}")
+			#print(f" Contains {img.n_frames} pictures")
 			img = img.convert('RGB')
 			img.save(jpg_filepath, 'jpeg')
 			dbgln(f"Converted {heic_filepath} to {jpg_filepath}", 2, self.args.verbosity)

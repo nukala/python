@@ -50,7 +50,7 @@ class Rbt:
 
     def __init__(self):
       self.mtag = GetMtag().to_string()
-      self.separator = False
+      self.do_sep = False
 
     def populate_cli_args(self, parsed):
         """
@@ -62,8 +62,8 @@ class Rbt:
             self.skip_listing = parsed.skip_listing
         if parsed.interactive is not None:
             self.interactive = parsed.interactive
-        if parsed.separator is not None:
-            self.separator = parsed.separator
+        if parsed.do_sep is not None:
+            self.do_sep = parsed.do_sep
 
         dbgln(f"parsed=[{parsed}],\n self={str(self)}"
                 f"\n args={self.args}\n", 2, self.verbose)
@@ -86,7 +86,7 @@ class Rbt:
                           help="Enable verbosity by specifying a number")
       parser.add_argument("-nl", "--no-list", dest="skip_listing", action="store_true",
                           help="Do not `ls -l` that file.")
-      parser.add_argument("-s", "--separator", dest="separator", action="store_true",
+      parser.add_argument("-s", "--separator", dest="do_sep", action="store_true",
                           help="Add an extra line separator after rbt'ing. ")
       parser.add_argument("-i", "--interactive", dest="interactive", action="store_true",
                           help="ask and then recycle/trash")
@@ -136,7 +136,7 @@ class Rbt:
         print(f"Sent {fn} to \"Recycle Bin\"")
       else: 
         print(f"rbt'd {fn} for mtag={self.mtag} - NOT SUPPORTED")
-      if self.separator:
+      if self.do_sep:
          print(f"")  
 
 
