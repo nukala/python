@@ -28,7 +28,7 @@ Pygments==2.19.2
 PyInputPlus==0.2.12
 pypdf==6.10.2
 PySimpleValidate==0.2.12
-pytest==8.4.2
+pytest==9.0.3
 python-dateutil==2.9.0.post0
 pytz==2025.2
 requests==2.32.5
