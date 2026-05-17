@@ -11,6 +11,7 @@ import traceback
 #    rotation if specified!
 ###########################################################################
 
+MAX_PAGES: int = 99
 class PageNumberParser:
     verbose = 0
 
@@ -24,7 +25,23 @@ class PageNumberParser:
             if '-' in element:
                 # Handle range like '3-10'
                 start_str, end_str = element.split('-', 1)
+                #
+                # Handle special case when there is no end, like "-p4-" 
+                #
+                # also "-p4-all"
+                #
+                if len(end_str) <= 0:
+                    print(f"empty end_str=[{end_str}]")
+                    end_str = str(MAX_PAGES)
+                elif end_str == "all":
+                    print(f"all end_str=[{end_str}]")
+                    end_str = str(MAX_PAGES)
                 start, end = int(start_str), int(end_str)
+                return set(range(start, end + 1))  # Include both ends
+            elif element == "all":
+                print(f"all element=[{element}]")
+                start = 1
+                end = MAX_PAGES
                 return set(range(start, end + 1))  # Include both ends
             else:
                 # Handle single number
