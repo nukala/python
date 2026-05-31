@@ -1,6 +1,8 @@
 import shutil
+import tempfile
 import unittest
 from basern.hl import append_to_file
+from unittest.mock import patch
 from pathlib import Path
 
 

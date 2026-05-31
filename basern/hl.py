@@ -22,19 +22,12 @@ def check_battery() -> tuple[int, bool]:
     battery = psutil.sensors_battery()
     
     if battery is None:
-        print("No battery detected on this device.")
+        #print("No battery detected on this device.")
         return 100, True
         
     percent = battery.percent
     plugged = battery.power_plugged
     
-#    if not plugged:
-#        #16:so31 = datetime.datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S %p %Z")
-#        #print(f"{now_str} battery={percent}%")
-#	return percent, False
-#    else: 
-#        #print(f"{now_str}  Power Source: {'AC Adapter (Plugged In)' if plugged else 'Battery'}")
-#	return "", True
     return percent, plugged
 
 def append_to_file(filename: str, content: str, subfolder: str = "default", file_marker: bool = False) -> str|Path:
@@ -67,10 +60,10 @@ def cat_to_sysout(file_obj: str|Path) -> None:
 
 if __name__ == "__main__":
     pct, plugged = check_battery()
+#   #16:so31 = datetime.datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S %p %Z")
     now_str = datetime.datetime.now().strftime('%b%d %H:%M:%S')
     hl_str = f"{now_str} battery={pct}%"
     if not plugged:
         print(f"{hl_str}")
-    fobj = append_to_file("hl.txt", hl_str, "hl", True)
-    cat_to_sysout(fobj)
-
+        fobj = append_to_file("hl.txt", hl_str, "hl", True)
+        cat_to_sysout(fobj)
