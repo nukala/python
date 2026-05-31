@@ -2,6 +2,7 @@ import pytest
 #from numpy.matlib import empty
 
 from basern.pdf_comp import PageNumberParser
+from basern.pdf_comp import MAX_PAGES
 
 
 @pytest.fixture
@@ -55,3 +56,26 @@ def test_nopage_number(parser):
     input_str = "May-2025_9453545_10066-Monthly-Notice.pdf"
     number_set = parser.parse_range_string(input_str)
     assert len(number_set) == 0
+
+
+def test_no_endstr(parser):
+    """ Test strings that do not have an ending page number """
+    input_str = "foo-p4-"
+    number_list = list(parser.parse_range_string(input_str))
+    assert len(number_list) == 96
+    assert int(number_list[0]) == 4
+
+
+def test_begin_number_then_all(parser):
+    input_str = "foo-p9-all"
+    number_list = list(parser.parse_range_string(input_str))
+    assert len(number_list) == 91
+    assert int(number_list[0]) == 9
+
+
+def test_all_pages(parser):
+    input_str = "foo-pall"
+    number_list = list(parser.parse_range_string(input_str))
+    assert len(number_list) == 99
+    assert int(number_list[98]) == MAX_PAGES
+

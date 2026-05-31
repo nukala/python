@@ -33,7 +33,7 @@ class TestCatToSysout(unittest.TestCase):
         with redirect_stdout(captured):
             cat_to_sysout(filename)
 
-        print(f"filename = {filename}")
+        #print(f"filename = {filename}")
         self.assertEqual(captured.getvalue(), "hello world")
 
     def test_accepts_path_object(self):
