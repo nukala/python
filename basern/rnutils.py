@@ -1,12 +1,15 @@
+from __future__ import annotations
 from basern.yesno import bool_yesno
+from datetime import date, datetime
 from pathlib import Path
-from typing import IO
+from typing import IO, Final
 
-import datetime
 import os
 import subprocess
 import sys
 import time
+
+
 
 ######################
 # Bunch of utility methods. Some may be excessive - this being python.
@@ -62,7 +65,7 @@ def log_ts(verbose = False):
     If verbose - millisecond accuracy upto 3 digits
     """
     fmt = '%Y-%b-%d %H:%M:%S.%f' if verbose else '%Y-%b-%d %H:%M:%S'
-    ts=f"{datetime.datetime.today().strftime(fmt)}"
+    ts=f"{datetime.today().strftime(fmt)}"
     # print(f"verbose={verbose}, format={fmt}, ts={ts}")
     if verbose:
         ts=ts[:-3]
@@ -118,18 +121,18 @@ def befsub(str, sep):
 
 
 def get_long_filename(prefix, suffix="log"):
-    now = datetime.datetime.today()
+    now = datetime.today()
     # https://strftime.org/
     return f"{prefix}-{now.strftime('%m%d%I%M')}.{suffix}"
 
 
 def get_mmdd_filename(prefix, suffix="log"):
-    now = datetime.datetime.today()
+    now = datetime.today()
     return f"{prefix}-{now.strftime('%m%d')}.{suffix}"
 
 
 def write_log(logf, msg):
-    ts = datetime.datetime.today().strftime('%Y-%b-%d %H:%M:%S')
+    ts = datetime.today().strftime('%Y-%b-%d %H:%M:%S')
     message = f"{ts} ---=== {msg} ===--- "
 
     if logf == None:
@@ -148,7 +151,7 @@ def tee_log(logf, msg, do_print=True):
 
 def log_started_message(logf, prog=""):
     tee_log(logf, f"""###
-# {prog} started at {datetime.datetime.now().strftime('%I:%M.%S %p on %d %b %Y')}
+# {prog} started at {datetime.now().strftime('%I:%M.%S %p on %d %b %Y')}
 ### """)
 
 
@@ -652,3 +655,43 @@ def get_gitbranch(logf=None):
         branch = m['stdout']
 
     return branch
+    
+
+def delete_if_older_than_today(filename: str | Path) -> bool:
+    """
+    Delete the file if it is older than today.
+
+    Returns:
+        True if the file was deleted.
+        False otherwise.
+    """
+    path: Final[Path] = Path(filename)
+
+    if not is_file_older_than_today(path):
+        return False
+
+    path.unlink(missing_ok=True)
+    return True
+
+
+def is_file_older_than_today(filename: str | Path) -> bool:
+    """
+    Return True if the file exists and its newest timestamp
+    (created or modified date) is before today.
+    Return False if the file is missing or dated today/future.
+    """
+    path: Final[Path] = Path(filename)
+
+    if not path.exists():
+        return False
+
+    stat = path.stat()
+    #newest_timestamp = max(stat.st_ctime, stat.st_mtime)
+    newest_timestamp = stat.st_mtime
+    #print(f"newest=[{newest_timestamp}]")
+
+    file_date = datetime.fromtimestamp(newest_timestamp)
+    today_midnight = datetime.now().replace(hour = 0, minute = 0, second = 0, microsecond = 0)
+    #print(f"today_midnight=[{today_midnight}], file_date=[{file_date}]")
+    
+    return file_date < today_midnight
