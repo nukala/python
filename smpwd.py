@@ -6,14 +6,19 @@ from argparse import ArgumentParser
 
 
 """
+To return a shorter version of pwd. 
+ if > 3 return 3 dirnames
+ if 2 return those two
+ else return entire
+
+TODO
+  - support for venv `smpwd -nl -n 2 --path $VIRTUAL_ENV` showing folder not venv 
+  - venv should be defaulted perhaps as a cli param
+  - typer-ify
+
+Works in C: drive and many other folders.
+ To help test:  mkdir -p a/b/c/d/e/f/g/h/i/j/k/l/m/n/op/q/r/s/t/u/v/w/x/y/z
 """
-#To return a shorter version of pwd. 
-# if > 3 return 3 dirnames
-# if 2 return those two
-# else return entire
-#
-#Works in C: drive and many other folders.
-# To help test:  mkdir -p a/b/c/d/e/f/g/h/i/j/k/l/m/n/op/q/r/s/t/u/v/w/x/y/z
 
 
 if __name__ == "__main__":
