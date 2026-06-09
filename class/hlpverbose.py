@@ -3,15 +3,18 @@
 
 import typer
 
-app = typer.Typer(help="inline help", no_args_is_help=True)
+#help="inline help"
+app = typer.Typer(no_args_is_help=True)
 
-#@app.callback()
+@app.callback()
 def foo():
     """
     This is the main program help text.
 
     You can add multiple lines here, and Typer will
     automatically handle the formatting and indentation.
+
+    After empty line
     """
     pass
 

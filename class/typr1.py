@@ -25,8 +25,8 @@ def main(
     Main application entry point
     is this a 
     multi-line help?
-    
-    Not a multi-line, but this shows up only when help-paramter is removed from Typer ctor
+
+    Empty line signifies a line break. Rest of them are seemingly combined. Lets see what happens with a really long line that is ~160 characters or longer. Yup, long line. Only emptly line creates breaks.
     """
     # 2. Assign the parsed value to the shared state
     state["verbosity"] = verbosity
