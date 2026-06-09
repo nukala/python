@@ -6,6 +6,9 @@ from pillow_heif import register_heif_opener
 from ghsv import dbgln
 
 
+# https://gemini.google.com/app/f3b3d3d0e600d864
+# not much size reduction till 40% 
+# python /Users/ravi/mine/rnpydev/heic_jpg.py -p . -c . -i IMG_8260.heic -j parking-def -v; du -hs IMG_8260.heic parking*
 class HeicJpeg:
 	def __init__(self):
 		parser = argparse.ArgumentParser(description="To convert HEIC (iPhone) to JPEG format. "
@@ -36,9 +39,19 @@ class HeicJpeg:
 		try:
 			img = Image.open(heic_filepath)
 			print(f"img={img}")
+			if hasattr(img, "n_frames"):
+				print(f"Total images inside this file: {img.n_frames}")
+
+				# 3. Step to the next image in the burst
+				#img.seek(1)
+				#print(f"Now looking at Frame: {img.tell()}")
 			#print(f" Contains {img.n_frames} pictures")
 			img = img.convert('RGB')
-			img.save(jpg_filepath, 'jpeg')
+			img.save(jpg_filepath, 'jpeg', 
+				quality=50,          # Controls compression (1-100)
+				subsampling=0,       # Retains sharp color edges (4:4:4)
+				keep_rgb=True        # Prevents colorspace shifts
+			)
 			dbgln(f"Converted {heic_filepath} to {jpg_filepath}", 2, self.args.verbosity)
 		except Exception as e:
 			print(f"Error converting {heic_filepath}: {e}")
