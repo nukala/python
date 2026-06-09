@@ -16,6 +16,8 @@ mkreq:
 	#${PIP} freeze --verbose --all >> requirements.txt
 	@echo " NOTE-PRE-COMMIT> Remove pip/pywin32 not-cross-platform deps manually"
 
+test: tests
+
 tests::
 	${PYTHON} -m unittest tests/test_*.py
 

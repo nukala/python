@@ -6,7 +6,7 @@ import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 
-from basern.hl import cat_to_sysout
+from basern.hl import HideLock
 
 # Tests for cat_to_sysout
 class TestCatToSysout(unittest.TestCase):
@@ -31,7 +31,7 @@ class TestCatToSysout(unittest.TestCase):
         captured = io.StringIO()
 
         with redirect_stdout(captured):
-            cat_to_sysout(filename)
+            HideLock.cat_to_sysout(filename)
 
         #print(f"filename = {filename}")
         self.assertEqual(captured.getvalue(), "hello world")
@@ -44,7 +44,7 @@ class TestCatToSysout(unittest.TestCase):
         captured = io.StringIO()
 
         with redirect_stdout(captured):
-            cat_to_sysout(filename)
+            HideLock.cat_to_sysout(filename)
 
         self.assertEqual(captured.getvalue(), "abc")
 
@@ -55,7 +55,7 @@ class TestCatToSysout(unittest.TestCase):
         captured = io.StringIO()
 
         with redirect_stdout(captured):
-            cat_to_sysout(filename)
+            HideLock.cat_to_sysout(filename)
 
         self.assertEqual(captured.getvalue(), "")
 
@@ -69,13 +69,13 @@ class TestCatToSysout(unittest.TestCase):
         captured = io.StringIO()
 
         with redirect_stdout(captured):
-            cat_to_sysout(filename)
+            HideLock.cat_to_sysout(filename)
 
         self.assertEqual(captured.getvalue(), content)
 
     def test_missing_file_raises(self):
         with self.assertRaises(FileNotFoundError):
-            cat_to_sysout("does_not_exist.txt")
+            HideLock.cat_to_sysout("does_not_exist.txt")
 
     @patch("shutil.copyfileobj")
     def test_uses_copyfileobj(self, mock_copy):
@@ -83,7 +83,7 @@ class TestCatToSysout(unittest.TestCase):
             f.write("hello")
             filename = f.name
 
-        cat_to_sysout(filename)
+        HideLock.cat_to_sysout(filename)
 
         mock_copy.assert_called_once()
 

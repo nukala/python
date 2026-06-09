@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from basern.yesno import bool_yesno
 from datetime import date, datetime
 from pathlib import Path
@@ -695,3 +696,11 @@ def is_file_older_than_today(filename: str | Path) -> bool:
     #print(f"today_midnight=[{today_midnight}], file_date=[{file_date}]")
     
     return file_date < today_midnight
+
+
+def clear_screen() -> None:
+    """ 
+    Cross platform, easy way, to clear screen without subprocess etc.
+    """
+    print("\033c", end="")
+

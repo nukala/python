@@ -22,11 +22,11 @@ def main(
     ] = 0,
 ):
     """
-    Main application entry point
+    [bold red]Main application [/bold red]entry point
     is this a 
     multi-line help?
 
-    Empty line signifies a line break. Rest of them are seemingly combined. Lets see what happens with a really long line that is ~160 characters or longer. Yup, long line. Only emptly line creates breaks.
+    [yellow]Empty line signifies a line break. Rest of them are seemingly combined. [/yellow]Lets see what happens with a really long line that is ~160 characters or longer. [bold green]Yup, long line. Only emptly line creates breaks[/bold green].
     """
     # 2. Assign the parsed value to the shared state
     state["verbosity"] = verbosity
