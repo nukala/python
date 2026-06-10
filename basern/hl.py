@@ -4,9 +4,10 @@ import os
 import psutil
 import shutil
 import sys
-from pathlib import Path
-from datetime import datetime, date
 from basern.rnutils import clear_screen, delete_if_older_than_today
+from dataclasses import dataclass
+from datetime import datetime, date
+from pathlib import Path
 
 #
 # WIP Idea is to replace hl=xx with an automatic script, that:
@@ -78,17 +79,23 @@ class HideLock:
         with open(file_obj, "r") as ff:
             shutil.copyfileobj(ff, sys.stdout)
 
+    def get_now_ts(self) -> str:
+        #16:so31 = datetime.datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S %p %Z")
+        now_str = datetime.now().strftime('%b%d %H:%M:%S')
+        return now_str
+    
+    def perform() -> None:
+        hl:HideLock = HideLock()
+        pct, plugged = hl.check_battery()
+        hl_str = f"{hl.get_now_ts()} battery={pct}%"
+        if not plugged:
+            clear_screen()
+            print(f"{hl_str}")
+    
+            fobj = hl.append_to_file("hl.txt", hl_str, "hl", delete_if_older = True)
+            print(f"========")
+            hl.cat_to_sysout(fobj)
+
 
 if __name__ == "__main__":
-    hl:HideLock = HideLock()
-    pct, plugged = hl.check_battery()
-#   #16:so31 = datetime.datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S %p %Z")
-    now_str = datetime.now().strftime('%b%d %H:%M:%S')
-    hl_str = f"{now_str} battery={pct}%"
-    if not plugged:
-        clear_screen()
-        print(f"{hl_str}")
-
-        fobj = hl.append_to_file("hl.txt", hl_str, "hl", delete_if_older = True)
-        print(f"========")
-        hl.cat_to_sysout(fobj)
+    HideLock.perform()
