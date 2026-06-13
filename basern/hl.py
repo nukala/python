@@ -4,10 +4,13 @@ import os
 import psutil
 import shutil
 import sys
+import typer
+
 from basern.rnutils import clear_screen, delete_if_older_than_today
 from dataclasses import dataclass
 from datetime import datetime, date
 from pathlib import Path
+from typing import Annotated
 
 #
 # WIP Idea is to replace hl=xx with an automatic script, that:
@@ -19,17 +22,61 @@ from pathlib import Path
 #  shows nothing if plugged in
 #  hl = hide+lock -> close the lid
 #
-# options
-#  -opened -o   laptop opened
-#  -h   multiline help
-#  -keep  do not delete, just append
-#  -backup backup old file NOT-WORKING
-#  -v and --verbose  same as usual
-#  -h and --help
-#  -nc --no-clear
 #
 
+#cli = typer.Typer()
+
 class HideLock:
+    def typer_entry_point(
+        show_pct: Annotated[bool, typer.Option(help="Show battery percentage and cat the file.") ]=True,
+        opened: Annotated[bool, typer.Option(help="Laptop opened, indicate so in the log")]=False,
+        keep: Annotated[bool, typer.Option("-k", "--keep", "--keep-log", 
+            help="Do not delete the log file, just keep appending.")]=False,
+        
+        no_clear: Annotated[bool, typer.Option(help="Do not clear screen before concatenating log file")]=False,
+        cat_only: Annotated[bool, typer.Option(
+            help="Only concatenate the log file. Donot show, donot append log file")]=False,
+
+        backup: Annotated[bool, typer.Option("-b", 
+            help="WIP: As day-of-week and replace as needed. As monday.hl for example")]=False,
+
+
+        # explicitly adding this seems to enable `-h`
+        help: Annotated[bool, typer.Option("-h", help="show this help text")]=False,
+        verbosity: Annotated[int, typer.Option("-v", count=True, 
+            help="Set verbosity level. Use -v for warning, -vv for info, -vvv for debug.") ]=0,
+        vlevel: Annotated[int, typer.Option("--verbosity", "-vrb",
+            help="Specify a verbosity level, 1=warning, 2=info,3=debug etc.")]=0,
+    ) -> None:
+        """
+        perform: To show the current battery percentage. Log them into a file and optionally remove the file the next day this program is executed.
+        
+        Hide all programs except terminal, then run this program and lock the screen.
+
+        [yellow]WIP backup into day-of-week file (say wednesday.hl, etc) and over write as needed[/yellow]
+        """
+        if vlevel > 0:
+            verbosity = vlevel
+        if verbosity > 7:
+            #just show parameters and return
+            print(f"show={show_pct}, opened={opened}, verbosity={verbosity}, vlevel={vlevel}, keep={keep}" + 
+                f", backup={backup}, no_clear={no_clear}, cat_only={cat_only}")
+            return
+        hl:HideLock = HideLock()
+        if not show_pct:
+            if verbosity > 1:
+                print(f"{verbosity} - not showing pct, not doing nothing.")
+            return
+        pct, plugged = hl.check_battery()
+        hl_str = f"{HideLock.get_now_ts()} battery={pct}%"
+        if not plugged:
+            #clear_screen()
+            print(f"{hl_str}")
+    
+            fobj = hl.append_to_file("hl.txt", hl_str, "hl", delete_if_older = True)
+            print(f"========")
+            hl.cat_to_sysout(fobj)
+
     def check_battery(self) -> tuple[int, bool]:
         """
         returns battery percentage and plugged in status if possible
@@ -79,23 +126,30 @@ class HideLock:
         with open(file_obj, "r") as ff:
             shutil.copyfileobj(ff, sys.stdout)
 
-    def get_now_ts(self) -> str:
+    @staticmethod
+    def get_now_ts() -> str:
         #16:so31 = datetime.datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S %p %Z")
         now_str = datetime.now().strftime('%b%d %H:%M:%S')
         return now_str
     
-    def perform() -> None:
-        hl:HideLock = HideLock()
-        pct, plugged = hl.check_battery()
-        hl_str = f"{hl.get_now_ts()} battery={pct}%"
-        if not plugged:
-            clear_screen()
-            print(f"{hl_str}")
-    
-            fobj = hl.append_to_file("hl.txt", hl_str, "hl", delete_if_older = True)
-            print(f"========")
-            hl.cat_to_sysout(fobj)
+    #@cli.callback()
+    def foo(verbosity: Annotated[int, 
+        typer.Option("--verbosity", "-v", count=True, 
+            help="Set verbosity level. Use -v for warning, -vv for info, -vvv for debug."
+        ) ] = 0,
+        show_pct: Annotated[bool, 
+        typer.Option("-show_pct", 
+            help="Show battery percentage and cat the file."
+        ) ] = True):
+        """
+        callback: To show the current battery percentage. Log them into a file and optionally remove the file the next day this program is executed.
+        
+        Hide all programs except terminal, then run this program and lock the screen.
 
+        [yellow]WIP backup into day-of-week file (say wednesday.hl, etc) and over write as needed[/yellow]
+        """
+        print(f"{get_now_ts()} - callback invoked")
+        pass
 
 if __name__ == "__main__":
-    HideLock.perform()
+    typer.run(HideLock.typer_entry_point)
