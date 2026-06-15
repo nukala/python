@@ -658,7 +658,7 @@ def get_gitbranch(logf=None):
     return branch
     
 
-def delete_if_older_than_today(filename: str | Path) -> bool:
+def delete_if_older_than_today(filename: str | Path, verbosity:int=0) -> bool:
     """
     Delete the file if it is older than today.
 
@@ -668,14 +668,20 @@ def delete_if_older_than_today(filename: str | Path) -> bool:
     """
     path: Final[Path] = Path(filename)
 
-    if not is_file_older_than_today(path):
+    if not is_file_older_than_today(path,verbosity=verbosity):
         return False
 
-    path.unlink(missing_ok=True)
+    try:
+        path.unlink(missing_ok=True)
+        if verbosity > 1:
+            print(f"{verbosity} - [{path}] deleted!")
+    except:
+        print(f">>> delete failed!")
+        return False
     return True
 
 
-def is_file_older_than_today(filename: str | Path) -> bool:
+def is_file_older_than_today(filename: str | Path, verbosity: int=0) -> bool:
     """
     Return True if the file exists and its newest timestamp
     (created or modified date) is before today.
@@ -690,10 +696,13 @@ def is_file_older_than_today(filename: str | Path) -> bool:
     #newest_timestamp = max(stat.st_ctime, stat.st_mtime)
     newest_timestamp = stat.st_mtime
     #print(f"newest=[{newest_timestamp}]")
+    if verbosity >= 2:
+        print(f"{verbosity} - mtime=[{datetime.fromtimestamp(newest_timestamp)}]")
 
     file_date = datetime.fromtimestamp(newest_timestamp)
     today_midnight = datetime.now().replace(hour = 0, minute = 0, second = 0, microsecond = 0)
-    #print(f"today_midnight=[{today_midnight}], file_date=[{file_date}]")
+    if verbosity >= 2:
+        print(f"{verbosity} - today_midnight=[{today_midnight}], file_date=[{file_date}]")
     
     return file_date < today_midnight
 
