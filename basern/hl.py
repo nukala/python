@@ -10,19 +10,21 @@ from basern.rnutils import clear_screen, delete_if_older_than_today
 from dataclasses import dataclass
 from datetime import datetime, date
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Final
 
+# WIP:
+#  opened is a sub-command instead of option, duplicate? clear and keep
+#   remove show_pct is this implied, any other behavior possible?
 #
-# WIP Idea is to replace hl=xx with an automatic script, that:
-#  appends battery pct to a file (~/tmp/hl/monday.hl, etc)
-#  copies "bat file_name" into clipboard
+#==========
+# Idea is to generate battery percentages, log them into a file and show them in the end. Also clean up logs from
+#  executions of prior days
+#  appends battery pct to the same log file
 #  shows battery pct on command line
 #  replace the file if dates are not the same
 #
 #  shows nothing if plugged in
 #  hl = hide+lock -> close the lid
-#
-# Use sub-commands:
 #
 
 cli = typer.Typer()
@@ -30,67 +32,87 @@ cli = typer.Typer()
 
 class HideLock:
     @dataclass
-    class AppConfig:
+    class HlConfig:
+        SUB_FOLDER: Final[str] = "hl"
+        HL_FILE_NAME: Final[str] = "hl.txt"
+
+        clear: bool=True
         keep: bool=False
-        no_clear: bool=False
-        cat_only: bool=False
-        backup: bool=False
+        opened: bool=False
         verbosity: int=0
 
-        def dump_config(self):
-            # print(f"DUMP: show_pct={self.show_pct}, opened={self.opened}, keep={self.keep}, backup={self.backup}" + 
-            #     f", no_clear={self.no_clear}, cat_only={self.cat_only}" + 
-            #     f"\n\tverbosity={self.verbosity}")
-            print(f"DUMP: keep={self.keep} backup={self.backup}, no_clear={self.no_clear}, cat_only={self.cat_only}" + 
+        def dump_config(self, message=""):
+            print(f"{message}DUMP: keep={self.keep}, clear={self.clear}, opened={self.opened}" + 
                 f"\n\tverbosity={self.verbosity}")
 
+ #   @l
     @cli.command()
     def show(ctx: typer.Context,
         show_pct: Annotated[bool, typer.Option(help="Show battery percentage and cat the file.") ]=True,
-        opened: Annotated[bool, typer.Option(help="Laptop opened, indicate so in the log")]=False,
-        keep: Annotated[bool, typer.Option("-k", "--keep", "--keep-log", 
-            help="Do not delete the log file, just keep appending.")]=False,
+        opened: Annotated[bool, typer.Option("-o", "--opened",
+            help="Laptop opened, indicate so in the log. default=off.")]=False,
+        keep: Annotated[bool, typer.Option(help="Do not delete the log file on next day, just keep appending.")]=False,
         
         help: Annotated[bool, typer.Option("-h", help="show this help text")]=False,
             ) -> None:
         """
         Shows the current available battery percentage, appends to a log file, clears the screen and con-catenates log-file contents onto the screen. Also, deletes the log-file if day changes from 14th to 15th say
 
-        [b]
+	[b]
         optional controls:
             opened:  to show that laptop was opened when the percentages were generated
             keep:  do not delete the log file of prior day
         [/b]
         """
-        hl:HideLock = HideLock()
-        cfg: AppConfig=ctx.obj
-        #print(f"in show ctx={ctx}")
+        cfg: HideLock.HlConfig=ctx.obj
+        if cfg.verbosity >= 3:
+            print(f"in show ctx={ctx}")
         if not show_pct:
             if cfg.verbosity > 1:
                 print(f"{cfg.verbosity} - not showing pct, not doing nothing.")
             return
         cfg.keep = keep
-        pct, plugged = hl.check_battery()
-        hl_str = f"{HideLock.get_now_ts()} battery={pct}%"
-        if not plugged:
-            if not cfg.no_clear:
-                clear_screen()
-            print(f"{hl_str}")
-    
-            fobj = hl.append_to_file(ctx, "hl.txt", hl_str, "hl", verbosity=cfg.verbosity, delete_if_older = True)
-            print(f"========")
-            hl.cat_to_sysout(fobj)
+        cfg.opened = opened
 
-    @cli.command(help="concatenate log ONLY, optionally no-clear-screen")
+        hl:HideLock = HideLock()
+        # gather percentage and write to file
+        hl.gatherpct_writelog(ctx)
+
+    @cli.command(help="concatenate log ONLY, optionally for clear screen")
     def cat(ctx: typer.Context,
+            clear: Annotated[bool, typer.Option(help="Clear screen before concatenating log file")]=True,
     
             help: Annotated[bool, typer.Option("-h", help="show this help text")]=False,
             ) -> None:
         hl: HideLock=HideLock()
-        if not ctx.obj.no_clear:
+        cfg: HideLock.HlConfig=ctx.obj
+
+        cfg.clear=clear
+        if cfg.clear:
             clear_screen()
-        fobj=hl.get_file_path(subfolder="hl", filename="hl.txt")
+        fobj=hl.get_file_path(subfolder=HideLock.HlConfig.SUB_FOLDER, filename=HideLock.HlConfig.HL_FILE_NAME)
         hl.cat_to_sysout(fobj)
+
+    def gatherpct_writelog(self, ctx: typer.Context) -> None:
+        pct, plugged = self.check_battery()
+
+        cfg:HideLock.HlConfig = ctx.obj
+        if plugged:
+            if cfg.verbosity >= 2:
+                print(f" >>> plugged in, nothing to do")
+                return
+
+        hl_str = f"{HideLock.get_now_ts()} battery={pct}% {"OPENED" if cfg.opened else ""}"
+
+        if cfg.clear:
+            clear_screen()
+        print(f"{hl_str}")
+
+        fobj = self.append_to_file(ctx, HideLock.HlConfig.HL_FILE_NAME, hl_str, HideLock.HlConfig.SUB_FOLDER, 
+            verbosity=cfg.verbosity, delete_if_older=True)
+        print(f"========")
+        self.cat_to_sysout(fobj)
+
 
     def check_battery(self) -> tuple[int, bool]:
         """
@@ -123,16 +145,17 @@ class HideLock:
     def append_to_file(ctx: typer.Context, filename: str, content: str, subfolder: str = "default", 
             delete_if_older: bool = False, verbosity: int = 0) -> str|Path:
         """
-	    Appends a line of text to a file within ~/tmp/[subfolder].
+	Appends a line of text to a file within ~/tmp/[subfolder].
 
-	    Does not follow SOLID. Peforms append and delete <YUCK>
+	Does not follow SOLID. Peforms append and delete <YUCK>
         """
+        cfg: HideLock.HlConfig=ctx.obj
         file_path = HideLock.get_file_path(filename, subfolder=subfolder, verbosity=verbosity)
-        cfg: AppConfig=ctx.obj
 
         # delete if there is an older file
         if not cfg.keep and delete_if_older:
-            print(f" checking to delete keep={cfg.keep}, delete_if_older={delete_if_older}")
+            if cfg.verbosity >= 3:
+                print(f" checking to delete keep={cfg.keep}, delete_if_older={delete_if_older}")
             stat = os.stat(file_path)
             if delete_if_older_than_today(file_path, verbosity=verbosity):
                 print(f"modified={datetime.fromtimestamp(stat.st_mtime)} older file deleted!")
@@ -161,12 +184,7 @@ class HideLock:
 
     @cli.callback(invoke_without_command=True)
     def typer_entry_point(ctx: typer.Context,        
-        no_clear: Annotated[bool, typer.Option(help="Do not clear screen before concatenating log file")]=False,
-        cat_only: Annotated[bool, typer.Option(
-            help="Only concatenate the log file. Donot show, donot append log file")]=False,
-
-        backup: Annotated[bool, typer.Option("-b", 
-            help="WIP: As day-of-week and replace as needed. As monday.hl for example")]=False,
+        clear: Annotated[bool, typer.Option(help="Clear screen before concatenating log file")]=True,
 
         # explicitly adding this seems to enable `-h`
         help: Annotated[bool, typer.Option("-h", help="show this help text")]=False,
@@ -176,35 +194,33 @@ class HideLock:
             help="Specify a verbosity level, 1=warning, 2=info,3=debug etc.")]=0,
     ) -> None:
         """
-        typer_entry_point: To show the current battery percentage. Log them into a file and optionally remove the file the next day this program is executed.
+        To show the current battery percentage. Log them into a file and optionally remove the file the next day this program is executed.
         
         Hide all programs except terminal, then run this program and lock the screen.
 
-        [yellow]WIP backup into day-of-week file (say wednesday.hl, etc) and over write as needed[/yellow]
+        [yellow]IGNORING backup into day-of-week file (say wednesday.hl, etc) and over write as needed[/yellow]
         """
         # prepare config
         if vlevel > 0:
             verbosity = vlevel
         
         # now setup config
-        cfg: HideLock.AppConfig=HideLock.AppConfig(backup=backup, no_clear=no_clear, cat_only=cat_only, 
-            verbosity=verbosity)
-        print(f"entry_point ", end='')
-        cfg.dump_config()
-        # hl.config.show_pct=show_pct
+        cfg: HideLock.HlConfig=HideLock.HlConfig(clear=clear, verbosity=verbosity)
+        if cfg.verbosity >= 3:
+            cfg.dump_config("entry_point ")
 
         ctx.obj = cfg
-        if verbosity > 7:
+        if cfg.verbosity > 7:
             #just show parameters and return
             cfg.dump_config()
             return
         if ctx.invoked_subcommand is None:
-            print("No command provided. Running default action...", end='')
-            ctx.obj.dump_config()
-            print(f"before default show ctx=[{ctx}]")
-            ctx.invoke(show)
+            msg="No command provided, defaualt action=show " if cfg.verbosity > 2 else ""
+            if cfg.verbosity >= 3:
+                cfg.dump_config(f"{msg}")
+                print(f"before default show ctx=[{ctx}]")
+            HideLock.show(ctx)
 
 
 if __name__ == "__main__":
-    #typer.run(HideLock.typer_entry_point)
     cli()
