@@ -690,9 +690,6 @@ def is_file_older_than_today(filename: str | Path, verbosity: int=0) -> bool:
     """
     path: Final[Path] = Path(filename)
     func: str = inspect.currentframe().f_code.co_name
-    # save this comment
-    #caller: str = inspect.currentframe().f_back.f_code.co_name
-    # inspect.stack() for all traces!
 
     if not path.exists():
         return False
