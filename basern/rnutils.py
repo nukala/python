@@ -5,6 +5,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import IO, Final
 
+import inspect
 import os
 import subprocess
 import sys
@@ -688,6 +689,10 @@ def is_file_older_than_today(filename: str | Path, verbosity: int=0) -> bool:
     Return False if the file is missing or dated today/future.
     """
     path: Final[Path] = Path(filename)
+    func: str = inspect.currentframe().f_code.co_name
+    # save this comment
+    #caller: str = inspect.currentframe().f_back.f_code.co_name
+    # inspect.stack() for all traces!
 
     if not path.exists():
         return False
@@ -697,12 +702,12 @@ def is_file_older_than_today(filename: str | Path, verbosity: int=0) -> bool:
     newest_timestamp = stat.st_mtime
     #print(f"newest=[{newest_timestamp}]")
     if verbosity >= 2:
-        print(f"{verbosity} - mtime=[{datetime.fromtimestamp(newest_timestamp)}]")
+        print(f"{func}({verbosity}) - mtime=[{datetime.fromtimestamp(newest_timestamp)}]")
 
     file_date = datetime.fromtimestamp(newest_timestamp)
     today_midnight = datetime.now().replace(hour = 0, minute = 0, second = 0, microsecond = 0)
     if verbosity >= 2:
-        print(f"{verbosity} - today_midnight=[{today_midnight}], file_date=[{file_date}]")
+        print(f"{func}({verbosity}) - today_midnight=[{today_midnight}], mod_date=[{file_date}]")
     
     return file_date < today_midnight
 

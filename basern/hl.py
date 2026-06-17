@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import os
 import psutil
 import shutil
@@ -13,7 +14,7 @@ from pathlib import Path
 from typing import Annotated, Final
 
 # WIP:
-#  opened is a sub-command instead of option, duplicate? clear and keep
+#   keep option for `opened` does not override as expected. bool
 #   remove show_pct is this implied, any other behavior possible?
 #
 #==========
@@ -45,10 +46,32 @@ class HideLock:
             print(f"{message}DUMP: keep={self.keep}, clear={self.clear}, opened={self.opened}" + 
                 f"\n\tverbosity={self.verbosity}")
 
- #   @l
+    @cli.command()
+    def opened(ctx: typer.Context,
+        keep: Annotated[bool, typer.Option(help="Do not delete the log file on next day, just keep appending.")]=False,
+
+        help: Annotated[bool, typer.Option("-h", help="show this help text")]=False,
+            ) -> None:
+        """
+        To indicate the laptop was opened. Recommended to use only when opened for the first time. There is no 
+         enforcement of this recommendation. System cannot differentiate at this time. 
+        
+        [b]
+        Options supported:
+            keep: do not delete the log file, even if the date rolls-over. Just keep appending. NOTE: subcommand's
+             option overrides the tools' option. Both tool and command have the same option.
+        [/b]
+        """
+        cfg: HideLock.HlConfig=ctx.obj
+        if keep:
+            cfg.keep = keep
+        cfg.opened = True
+
+        # gather percentage and write to file
+        HideLock().gatherpct_writelog(ctx)
+
     @cli.command()
     def show(ctx: typer.Context,
-        show_pct: Annotated[bool, typer.Option(help="Show battery percentage and cat the file.") ]=True,
         opened: Annotated[bool, typer.Option("-o", "--opened",
             help="Laptop opened, indicate so in the log. default=off.")]=False,
         keep: Annotated[bool, typer.Option(help="Do not delete the log file on next day, just keep appending.")]=False,
@@ -58,25 +81,21 @@ class HideLock:
         """
         Shows the current available battery percentage, appends to a log file, clears the screen and con-catenates log-file contents onto the screen. Also, deletes the log-file if day changes from 14th to 15th say
 
-	[b]
+	    [b]
         optional controls:
-            opened:  to show that laptop was opened when the percentages were generated
+            opened:  to show that laptop was opened when the percentages were generated [WIP]
             keep:  do not delete the log file of prior day
         [/b]
         """
         cfg: HideLock.HlConfig=ctx.obj
         if cfg.verbosity >= 3:
             print(f"in show ctx={ctx}")
-        if not show_pct:
-            if cfg.verbosity > 1:
-                print(f"{cfg.verbosity} - not showing pct, not doing nothing.")
-            return
+
         cfg.keep = keep
         cfg.opened = opened
 
-        hl:HideLock = HideLock()
         # gather percentage and write to file
-        hl.gatherpct_writelog(ctx)
+        HideLock().gatherpct_writelog(ctx)
 
     @cli.command(help="concatenate log ONLY, optionally for clear screen")
     def cat(ctx: typer.Context,
@@ -98,9 +117,9 @@ class HideLock:
 
         cfg:HideLock.HlConfig = ctx.obj
         if plugged:
-            if cfg.verbosity >= 2:
-                print(f" >>> plugged in, nothing to do")
-                return
+            if cfg.verbosity >= 1:
+                print(f" >>>{cfg.verbosity} - plugged in, nothing to do")
+            return
 
         hl_str = f"{HideLock.get_now_ts()} battery={pct}% {"OPENED" if cfg.opened else ""}"
 
@@ -132,22 +151,23 @@ class HideLock:
 
     @staticmethod
     def get_file_path(filename: str, subfolder:str, verbosity: int=0) -> Path:
+        func: str = inspect.currentframe().f_code.co_name
         # Resolve the base directory and create subfolders if they don't exist
         base_dir = Path.home() / "tmp" / subfolder
         base_dir.mkdir(parents=True, exist_ok=True)
     
         file_path = base_dir / filename
         if verbosity>1:
-            print(f"{verbosity} - returning [{file_path}]")
+            print(f"{func}({verbosity}) - returning [{file_path}]")
         return file_path
 
     @staticmethod
     def append_to_file(ctx: typer.Context, filename: str, content: str, subfolder: str = "default", 
             delete_if_older: bool = False, verbosity: int = 0) -> str|Path:
         """
-	Appends a line of text to a file within ~/tmp/[subfolder].
+	    Appends a line of text to a file within ~/tmp/[subfolder].
 
-	Does not follow SOLID. Peforms append and delete <YUCK>
+        Does not follow SOLID. Peforms append and delete <YUCK>
         """
         cfg: HideLock.HlConfig=ctx.obj
         file_path = HideLock.get_file_path(filename, subfolder=subfolder, verbosity=verbosity)
@@ -185,6 +205,7 @@ class HideLock:
     @cli.callback(invoke_without_command=True)
     def typer_entry_point(ctx: typer.Context,        
         clear: Annotated[bool, typer.Option(help="Clear screen before concatenating log file")]=True,
+        keep: Annotated[bool, typer.Option(help="Do not delete the log file on next day, just keep appending.")]=False,
 
         # explicitly adding this seems to enable `-h`
         help: Annotated[bool, typer.Option("-h", help="show this help text")]=False,
@@ -206,14 +227,11 @@ class HideLock:
         
         # now setup config
         cfg: HideLock.HlConfig=HideLock.HlConfig(clear=clear, verbosity=verbosity)
+        cfg.keep = keep
         if cfg.verbosity >= 3:
             cfg.dump_config("entry_point ")
 
         ctx.obj = cfg
-        if cfg.verbosity > 7:
-            #just show parameters and return
-            cfg.dump_config()
-            return
         if ctx.invoked_subcommand is None:
             msg="No command provided, defaualt action=show " if cfg.verbosity > 2 else ""
             if cfg.verbosity >= 3:
