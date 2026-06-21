@@ -5,15 +5,13 @@
 
 echo -n "stack[0][0] "
 python -m timeit -s 'import inspect, sys' 'inspect.stack()[0][0].f_code.co_name'
-#1000 loops, best of 3: 499 usec per loop
+
 echo -n "stack[0][3] "
 python -m timeit -s 'import inspect, sys' 'inspect.stack()[0][3]'
-#1000 loops, best of 3: 497 usec per loop
 
 echo -n "currentframe "
 python -m timeit -s 'import inspect, sys' 'inspect.currentframe().f_code.co_name'
-#10000000 loops, best of 3: 0.1 usec per loop
+
 echo -n "sys "
 python -m timeit -s 'import inspect, sys' 'sys._getframe().f_code.co_name'
-#10000000 loops, best of 3: 0.135 usec per loop
 
