@@ -1,6 +1,9 @@
+import click
 import shutil
 import tempfile
+import typer
 import unittest
+
 from basern.hl import HideLock
 from unittest.mock import patch
 from pathlib import Path
@@ -12,6 +15,15 @@ class TestAppendToFile(unittest.TestCase):
 
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
+
+        # 1. Create a dummy Click command required by the context
+        self.dummy_command = click.Command(name="test-cmd")
+
+        # 2. Build the typer.Context manually with your test state inside `obj`
+        self.mock_context = typer.Context(
+            command=self.dummy_command,
+            obj=HideLock.HlConfig()
+        )
 
         # Mock Path.home() so tests don't touch the real filesystem
         self.home_patch = patch(
@@ -26,7 +38,7 @@ class TestAppendToFile(unittest.TestCase):
         #print(f"cleaned up [{self.temp_dir}]")    
 
     def test_creates_file(self):
-        HideLock.append_to_file("test.txt", "hello")
+        HideLock.append_to_file(self.mock_context, "test.txt", "hello")
 
         file_path = (
             Path(self.temp_dir.name)
@@ -38,8 +50,8 @@ class TestAppendToFile(unittest.TestCase):
         self.assertTrue(file_path.exists())
 
     def test_appends_content(self):
-        HideLock.append_to_file("test.txt", "first")
-        HideLock.append_to_file("test.txt", "second")
+        HideLock.append_to_file(self.mock_context, "test.txt", "first")
+        HideLock.append_to_file(self.mock_context, "test.txt", "second")
 
         file_path = (
             Path(self.temp_dir.name)
@@ -54,7 +66,7 @@ class TestAppendToFile(unittest.TestCase):
         )
 
     def test_append_oneline(self):
-        HideLock.append_to_file("test.txt", "sample")
+        HideLock.append_to_file(self.mock_context, "test.txt", "sample")
 
         file_path = (
             Path(self.temp_dir.name)
@@ -70,6 +82,7 @@ class TestAppendToFile(unittest.TestCase):
 
     def test_creates_subfolder(self):
         HideLock.append_to_file(
+	    self.mock_context,
             "test.txt",
             "hello",
             subfolder="images"
@@ -85,7 +98,7 @@ class TestAppendToFile(unittest.TestCase):
         self.assertTrue(file_path.exists())
 
     def test_strips_trailing_newlines(self):
-        HideLock.append_to_file("test.txt", "hello\n\n")
+        HideLock.append_to_file(self.mock_context, "test.txt", "hello\n\n")
 
         file_path = (
             Path(self.temp_dir.name)
@@ -100,7 +113,7 @@ class TestAppendToFile(unittest.TestCase):
         )
 
     def test_strips_trailing_spaces(self):
-        HideLock.append_to_file("test.txt", "hello   ")
+        HideLock.append_to_file(self.mock_context, "test.txt", "hello   ")
 
         file_path = (
             Path(self.temp_dir.name)
@@ -117,7 +130,7 @@ class TestAppendToFile(unittest.TestCase):
         )
 
     def test_unicode_content(self):
-        HideLock.append_to_file("test.txt", "你好 🌍 ")
+        HideLock.append_to_file(self.mock_context, "test.txt", "你好 🌍 ")
 
         file_path = (
             Path(self.temp_dir.name)

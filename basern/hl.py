@@ -28,7 +28,8 @@ from typing import Annotated, Final
 #  hl = hide+lock -> close the lid
 #
 
-cli = typer.Typer()
+# remove the completion related help text
+cli = typer.Typer(add_completion=False)
 
 
 class HideLock:
