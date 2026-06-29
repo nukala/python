@@ -152,7 +152,7 @@ if __name__ == "__main__":
 
                     lsl = getoutput_from_run(['ls', '-ltr', fname], None,
                                              show_result=False, show_output=False, show_error=False)['stdout']
-                    print(f"  {msum.parse_lsl(lsl, msum.parsed.verbose)}")
+                    print(f"  {msum.parse_lsl(lsl, raw_byte_count=True, verbose=msum.parsed.verbose)}")
                 if msum.parsed.after_sep:
                     print(f"{msum.parsed.after_sep}", end="")
             else:

@@ -35,7 +35,8 @@ cli = typer.Typer(add_completion=False)
 class HideLock:
     @dataclass
     class HlConfig:
-        SUB_FOLDER: Final[str] = "hl"
+	# no need for subfolder, since we use ONLY one file all the time
+        SUB_FOLDER: Final[str] = ""
         HL_FILE_NAME: Final[str] = "hl.txt"
 
         clear: bool=True
@@ -122,14 +123,15 @@ class HideLock:
                 print(f" >>>{cfg.verbosity} - plugged in, nothing to do")
             return
 
-        hl_str = f"{HideLock.get_now_ts()} battery={pct}% {"OPENED" if cfg.opened else ""}"
-
         if cfg.clear:
             clear_screen()
-        print(f"{hl_str}")
 
+        hl_str = f"{HideLock.get_now_ts()} battery={pct}% {"OPENED" if cfg.opened else ""}"
         fobj = self.append_to_file(ctx, HideLock.HlConfig.HL_FILE_NAME, hl_str, HideLock.HlConfig.SUB_FOLDER, 
             verbosity=cfg.verbosity, delete_if_older=True)
+
+        #print(f"{hl_str}")
+
         print(f"========")
         self.cat_to_sysout(fobj)
 
@@ -162,9 +164,8 @@ class HideLock:
             print(f"{func}({verbosity}) - returning [{file_path}]")
         return file_path
 
-    @staticmethod
-    def append_to_file(ctx: typer.Context, filename: str, content: str, subfolder: str = "default", 
-            delete_if_older: bool = False, verbosity: int = 0) -> str|Path:
+    def append_to_file(self, ctx: typer.Context, filename: str, content: str, subfolder: str="default",
+            delete_if_older: bool=False, verbosity: int=0) -> str|Path:
         """
 	    Appends a line of text to a file within ~/tmp/[subfolder].
 
@@ -174,20 +175,31 @@ class HideLock:
         file_path = HideLock.get_file_path(filename, subfolder=subfolder, verbosity=verbosity)
 
         # delete if there is an older file
-        if not cfg.keep and delete_if_older:
-            if cfg.verbosity >= 3:
-                print(f" checking to delete keep={cfg.keep}, delete_if_older={delete_if_older}")
-            stat = os.stat(file_path)
-            if delete_if_older_than_today(file_path, verbosity=verbosity):
-                print(f"modified={datetime.fromtimestamp(stat.st_mtime)} older file deleted!")
-        else:
-            print(f"  >> not deleting keep={cfg.keep}, delete_if_older={delete_if_older}")
-
+        self.handle_deletion(ctx, file_path=file_path, delete_if_older=delete_if_older)
 
         # Use 'a' (append) mode to add content without overwriting
         with open(file_path, "a", encoding="utf-8") as f:
             f.write(f"{content.rstrip()}\n")
         return file_path
+
+    def handle_deletion(self, ctx: typer.Context, file_path: Path, delete_if_older: bool=False) -> None:
+        cfg: HideLock.HlConfig = ctx.obj
+
+        # delete if there is an older file
+        if not cfg.keep and delete_if_older:
+            if cfg.verbosity >= 3:
+                print(f" checking to delete keep={cfg.keep}, delete_if_older={delete_if_older}")
+            try:
+                stat = os.stat(file_path)
+                if delete_if_older_than_today(file_path, verbosity=cfg.verbosity):
+                    print(f"modified={datetime.fromtimestamp(stat.st_mtime)} older file deleted!")
+            except FileNotFoundError:
+                if cfg.verbosity >= 3:
+                    print(f"{file_path} does not exist, hence nothing to do")
+            return
+
+        if cfg.verbosity >= 1:
+            print(f"  >> not deleting keep={cfg.keep}, delete_if_older={delete_if_older}")
 
 
     @staticmethod
