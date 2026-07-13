@@ -10,12 +10,12 @@ import typer
 from basern.rnutils import clear_screen, delete_if_older_than_today
 from dataclasses import dataclass
 from datetime import datetime, date
+from enum import Enum
 from pathlib import Path
 from typing import Annotated, Final
 
-# WIP:
-#   keep option for `opened` does not override as expected. bool
-#   remove show_pct is this implied, any other behavior possible?
+# WIP: keep option for `opened` does not override as expected. bool
+# WIP: show_file NOP if keep
 #
 #==========
 # Idea is to generate battery percentages, log them into a file and show them in the end. Also clean up logs from
@@ -43,14 +43,17 @@ class HideLock:
         keep: bool=False
         opened: bool=False
         verbosity: int=0
+        show_file: bool=False
 
         def dump_config(self, message=""):
             print(f"{message}DUMP: keep={self.keep}, clear={self.clear}, opened={self.opened}" + 
+	          f" show_file={self.show_file}" +
                 f"\n\tverbosity={self.verbosity}")
 
     @cli.command()
     def opened(ctx: typer.Context,
         keep: Annotated[bool, typer.Option(help="Do not delete the log file on next day, just keep appending.")]=False,
+	show_file: Annotated[bool, typer.Option(help="Show contents of old file before deleting. Ignore keep for now")]=True,
 
         help: Annotated[bool, typer.Option("-h", help="show this help text")]=False,
             ) -> None:
@@ -68,9 +71,15 @@ class HideLock:
         if keep:
             cfg.keep = keep
         cfg.opened = True
+        cfg.show_file = show_file
+
+        hl: HideLock = HideLock()
+        if show_file:
+            fobj=hl.get_file_path(subfolder=HideLock.HlConfig.SUB_FOLDER, filename=HideLock.HlConfig.HL_FILE_NAME)
+            hl.cat_to_sysout(fobj)
 
         # gather percentage and write to file
-        HideLock().gatherpct_writelog(ctx)
+        hl.gatherpct_writelog(ctx)
 
     @cli.command()
     def show(ctx: typer.Context,
@@ -182,6 +191,12 @@ class HideLock:
             f.write(f"{content.rstrip()}\n")
         return file_path
 
+    class DeletionStatus(str, Enum):
+        DELETED = "deleted"
+        KEPT = "kept"
+        SAMEDAY = "sameday"
+
+    # WIP - return an enum {DELETED, KEPT, SAME_DAY}  - adjust tests!
     def handle_deletion(self, ctx: typer.Context, file_path: Path, delete_if_older: bool=False) -> None:
         cfg: HideLock.HlConfig = ctx.obj
 

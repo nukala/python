@@ -1,5 +1,4 @@
 import click
-import shutil
 import tempfile
 import typer
 import unittest
@@ -16,12 +15,9 @@ class TestAppendToFile(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
 
-        # 1. Create a dummy Click command required by the context
-        self.dummy_command = click.Command(name="test-cmd")
-
-        # 2. Build the typer.Context manually with your test state inside `obj`
+        # Build the typer.Context manually with your test state inside `obj`
         self.mock_context = typer.Context(
-            command=self.dummy_command,
+            command=click.Command(name="test-cmd"),
             obj=HideLock.HlConfig()
         )
 
