@@ -12,6 +12,16 @@ def is_windows() -> bool:
   return sys.platform in ("win32", "cygwin", "Windows")
 
 
+def is_win32() -> bool:
+  return is_windows()
+
+
+def is_win64() -> bool:
+  import platform
+
+  return platform.architecture()[0].startswith("64")
+
+
 class GetMtag:
   def __init__(self):
     if sys.platform.startswith('freebsd'):
