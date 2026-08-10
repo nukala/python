@@ -62,9 +62,6 @@ class HideLock:
          enforcement of this recommendation. System cannot differentiate at this time. 
         
         [b]
-        Options supported:
-            keep: do not delete the log file, even if the date rolls-over. Just keep appending. NOTE: subcommand's
-             option overrides the tools' option. Both tool and command have the same option.
         [/b]
         """
         cfg: HideLock.HlConfig=ctx.obj
