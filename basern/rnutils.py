@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from basern.yesno import bool_yesno
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import IO, Final
+from basern.getmtag import is_windows
 
 import inspect
 import os
@@ -278,7 +279,7 @@ def getoutput_from_run(cmd, logf, show_cmd=False, show_result=True, show_output=
     excpt = None
     elapsed = 0
     try:
-        if show_cmd == True:
+        if show_cmd:
             write_log(logf, f"About to start {cmd}")
         # TODO: cat no_exist does not goto out nor err
         # TODO: no special env or other-optional params
@@ -384,7 +385,7 @@ def open_resolved(path: Path | str, mode: str = "rb", encoding: str = None, verb
       path:     The path to open, as a Path or str.
       mode:     File mode, e.g. "rb", "r", "w". Defaults to "rb".
       encoding: Encoding for text modes. Ignored for binary modes.
-      verbose: Verbosity level.
+      verbose:  Verbosity level.
 
   Returns:
       An open file object (binary or text depending on mode).
@@ -408,7 +409,7 @@ def open_resolved(path: Path | str, mode: str = "rb", encoding: str = None, verb
   )
 
   if verbose >= 3:
-      print(f"Opening {resolved}")
+      print(f"Opening resolved={resolved}")
 
   return open(resolved, mode=mode, encoding=encoding)
 
@@ -489,21 +490,26 @@ def resolve_with_cygpath(path: Path | str, verbose:int = 0) -> Path:
     try:
         os.stat(p)
         return p
-    except OSError as e:
-        if e.winerror != 1920:
-            raise
-
+    except (OSError, FileNotFoundError) as e:
         if verbose >= 2:
             print(f"[{path}] failed to stat, e=[{e}], executing cygpath\n")
-        raw: str = subprocess.check_output(
+
+        if is_windows():
+            raw: str = subprocess.check_output(
             ["cygpath", "-aw", p.as_posix()],
             stderr=subprocess.DEVNULL,
             text=True,                   # decode stdout automatically
-        ).strip()
+            ).strip()
 
-        resolved: Path = Path(raw)
-        os.stat(resolved)                # validate — raises OSError if still broken
-        return resolved
+            resolved: Path = Path(raw)
+            try:
+                os.stat(resolved)                # validate — raises OSError if still broken
+                return resolved
+            except (OSError, FileNotFoundError) as ee:
+                if verbose >= 2:
+                    print(f"[{path}] failed to stat after cygpath e=[{e}]\n")
+                if ee.winerror != 1920:
+                    raise ee
 
 
 def get_pwd(use_tilda:bool = True):

@@ -120,7 +120,7 @@ class TestResolveWithCygpath(unittest.TestCase):
             self.assertEqual(len(stat_calls), 2)
 
     @requires_windows
-    def test_file_not_found_is_reraised(self):
+    def test_file_not_found_is_reraised_after_cygpath(self):
         """winerror 2 (file not found) is re-raised, cygpath not called."""
         not_found = OSError()
         not_found.winerror = 2
@@ -129,7 +129,7 @@ class TestResolveWithCygpath(unittest.TestCase):
              patch("subprocess.check_output") as mock_cyg:
             with self.assertRaises(OSError):
                 resolve_with_cygpath("nonexistent/file.txt")
-            mock_cyg.assert_not_called()
+            mock_cyg.assert_called_once()
 
     @requires_windows
     def test_permission_error_is_reraised(self):
@@ -141,10 +141,10 @@ class TestResolveWithCygpath(unittest.TestCase):
              patch("subprocess.check_output") as mock_cyg:
             with self.assertRaises(OSError):
                 resolve_with_cygpath("protected/file.txt")
-            mock_cyg.assert_not_called()
+            mock_cyg.assert_called_once()
 
     @requires_windows
-    def test_resolved_path_not_found_raises(self):
+    def test_resolved_path_not_found_raises_after_cygpath(self):
         """If cygpath resolves but the target doesn't exist, OSError is raised."""
         reparse_error = OSError()
         reparse_error.winerror = 1920

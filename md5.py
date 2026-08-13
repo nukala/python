@@ -12,7 +12,9 @@ from argparse import ArgumentParser
 
 import hashlib
 import mmap
-from basern.rnutils import format_bytes
+
+import basern
+from basern.rnutils import ( adjust_winpath, format_bytes )
 
 class Md5:
 
@@ -21,7 +23,7 @@ class Md5:
         self.parsed = None
         self.unknown_args = None
 
-    def process_block(self, fname):
+    def process_block(self, fname: str):
         hasher = hashlib.md5()
         with open(fname, "rb") as ff:
             hunk = ff.read(self.BLOCK_SZ)
@@ -32,7 +34,7 @@ class Md5:
         return hasher.hexdigest()
 
     # TODO: work in progress, there is a permission error while mapping
-    def process_mmap(self, fname):
+    def process_mmap(self, fname: str):
         hasher = hashlib.md5()
         with open(fname, "rb") as ff:
             mm = mmap.mmap(ff.fileno(), 0)
@@ -114,10 +116,6 @@ class Md5:
             sz = format_bytes(parts[4]) + " "
             parsed = sz + " ".join(parts[5:])
 
-#        from basern.getmtag import is_windows
-#        if is_windows():
-#            parsed = " ".join(parts[4:])
-
         if verbose >= 1:
             print(f" num={num}, parsed={parsed}")
         return parsed
@@ -134,13 +132,14 @@ if __name__ == "__main__":
     # preparation to help measure time spent
     for fname in msum.unknown_args:
         the_hash = 'unknown'
+        adjusted = str(adjust_winpath(fname, verbose=msum.parsed.verbose))
         try:
             if msum.parsed.use_block:
-                the_hash = msum.process_block(fname)
+                the_hash = msum.process_block(adjusted)
             elif msum.parsed.use_mmap:
-                the_hash = msum.process_mmap(fname)
+                the_hash = msum.process_mmap(adjusted)
             else:
-                the_hash = msum.process_inline(fname, msum.parsed.verbose)
+                the_hash = msum.process_inline(adjusted, msum.parsed.verbose)
 
             end = ""
             if msum.parsed.newline:
@@ -148,17 +147,17 @@ if __name__ == "__main__":
             if msum.parsed.short:
                 print(f"{the_hash}", end=f"{end}")
                 if msum.parsed.lsltr:
-                    from basern.rnutils import getoutput_from_run, format_bytes
-
-                    lsl = getoutput_from_run(['ls', '-ltr', fname], None,
-                                             show_result=False, show_output=False, show_error=False)['stdout']
-                    print(f"  {msum.parse_lsl(lsl, raw_byte_count=True, verbose=msum.parsed.verbose)}")
+                    # lsl = getoutput_from_run(['ls', '-ltr', adjusted], None,
+                    #                          show_result=False, show_output=False, show_error=False)['stdout']
+                    # print(f"  {msum.parse_lsl(lsl, raw_byte_count=True, verbose=msum.parsed.verbose)}")
+                    from basern.file_info import format_ls_name
+                    print(f"  {format_ls_name(adjusted, use_absolute=True)}")
                 if msum.parsed.after_sep:
                     print(f"{msum.parsed.after_sep}", end="")
             else:
-                fname = (fname.replace("/cygdrive/c/Users/ravi", "~")
-                         .replace("C:/Users/ravi", "~"))
-                print(f"{the_hash}\t{fname}")
+                # fname = (fname.replace("/cygdrive/c/Users/ravi", "~")
+                #          .replace("C:/Users/ravi", "~"))
+                print(f"{the_hash}\t{adjusted}")
         except (OSError, PermissionError) as e:
             print(f"{e}\n")
             if msum.parsed.verbose > 1:
@@ -166,4 +165,3 @@ if __name__ == "__main__":
 
                 traceback.print_exc()
             print("\n")
-            pass

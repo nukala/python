@@ -19,7 +19,8 @@ mkreq:
 tst: tests
 test: tests
 tests::
-	${PYTHON} -m unittest tests/test_*.py
+#${PYTHON} -m unittest tests/test_*.py
+	${PYTHON} -m unittest $(fd -tf -epy test_ tests)
 
 ## pip25 requires local installation?
 venv: requirements.txt
