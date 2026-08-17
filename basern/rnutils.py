@@ -376,7 +376,7 @@ def ask_then_run(cmd, logf, inpt=None, special_env=None, show_result=True, show_
 
     return stat
 
-def open_resolved(path: Path | str, mode: str = "rb", encoding: str = None, verbose: int = 0) -> IO:
+def open_resolved(path: Path | str, mode: str = "rb", encoding: str = None, verbose: int = 0) -> IO|None:
   """
   Open a file, resolving Cygwin WSL-format symlinks on Windows/Cygwin
   before opening. On all other platforms, opens directly.
@@ -402,19 +402,17 @@ def open_resolved(path: Path | str, mode: str = "rb", encoding: str = None, verb
           text = f.read()
   """
 
-  resolved: Path = (
-    adjust_winpath(str(path), verbose)
-    if sys.platform in ("win32", "cygwin")
-    else Path(path)
-  )
+  adj_path = adjust_winpath(str(path), verbose = verbose)
+  if adj_path is None:
+      return None
 
-  if verbose >= 3:
-      print(f"Opening resolved={resolved}")
-
-  return open(resolved, mode=mode, encoding=encoding)
+  try:
+      return open(adj_path, mode=mode, encoding=encoding)
+  except PermissionError as pe:
+      return None
 
 
-def adjust_winpath(file_name:str, verbose:int = 0) -> Path:
+def adjust_winpath(file_name:str, verbose:int = 0) -> Path|None:
     """
     Adjusts file_name into WINDOwS friendly version.
     Seems like `ln -s ` only WORKS when using `CYGWIN=winsymlinks:nativestrict ln -s FROM TO`
@@ -440,7 +438,7 @@ def adjust_winpath(file_name:str, verbose:int = 0) -> Path:
                 print(f"[{file_name}] replacing={key} with={repl}")
             file_name = file_name.replace(key, repl)
 
-    if verbose >= 1:
+    if verbose >= 2:
         print(f"[{adjusted}] after replacements=[{file_name}]")
 
     # fn = file_name
@@ -459,14 +457,9 @@ def adjust_winpath(file_name:str, verbose:int = 0) -> Path:
     #     if verbose > 1:
     #         print(f" realpath={fn}, for file={file_name}\n")
 
-    replaced_path = resolve_with_cygpath(file_name, verbose)
+    return resolve_with_cygpath(file_name, verbose)
 
-    # if not os.path.exists(replaced_path):
-    #   raise FileNotFoundError(f"No such file \"{replaced_path}\" \n")
-
-    return replaced_path
-
-def resolve_with_cygpath(path: Path | str, verbose:int = 0) -> Path:
+def resolve_with_cygpath(path: Path | str, verbose:int = 0) -> Path | None:
     """
     Resolve a path that may contain Cygwin WSL-format symlinks.
 
@@ -476,6 +469,7 @@ def resolve_with_cygpath(path: Path | str, verbose:int = 0) -> Path:
 
     Args:
         path: The path to resolve, as a Path or str.
+        verbose: controls debugs
 
     Returns:
         A resolved absolute Path.
@@ -492,25 +486,33 @@ def resolve_with_cygpath(path: Path | str, verbose:int = 0) -> Path:
         return p
     except (OSError, FileNotFoundError) as e:
         if verbose >= 2:
-            print(f"[{path}] failed to stat, e=[{e}], executing cygpath\n")
+            print(f"[{path}] failed to stat, e=[{str(e)}], executing cygpath\n")
 
         if is_windows():
-            raw: str = subprocess.check_output(
-            ["cygpath", "-aw", p.as_posix()],
-            stderr=subprocess.DEVNULL,
-            text=True,                   # decode stdout automatically
-            ).strip()
+            return handle_windows_failure(p, verbose)
 
-            resolved: Path = Path(raw)
-            try:
-                os.stat(resolved)                # validate — raises OSError if still broken
-                return resolved
-            except (OSError, FileNotFoundError) as ee:
-                if verbose >= 2:
-                    print(f"[{path}] failed to stat after cygpath e=[{e}]\n")
-                if ee.winerror != 1920:
-                    raise ee
 
+def handle_windows_failure(p: Path, verbose: int = 0):
+    raw: str = subprocess.check_output(
+        ["cygpath", "-aw", "--", p.as_posix()],
+        stderr=subprocess.DEVNULL,
+        text=True,  # decode stdout automatically
+    ).strip()
+
+    if verbose > 3:
+        print(f"handle_windows_failure: p=[{p}], raw=[{raw}]")
+    if raw == str(p):
+        if verbose > 3:
+            print(f"handle_windows_failure: cygpath output is same as input, nothing resolved")
+        return None
+    else:
+        resolved: Path = Path(raw)
+        try:
+            os.stat(resolved)  # validate — raises OSError if still broken
+            return resolved
+        except (OSError, FileNotFoundError) as ee:
+            if verbose > 3:
+                print(f"{verbose}[{p}] failed to stat after cygpath e=[{ee}]\n")
 
 def get_pwd(use_tilda:bool = True):
     """

@@ -1,20 +1,34 @@
 #!/usr/bin/env python3
 # coding: utf-8
-
 ###############################################################################
 # WIP - due to mmap
 #     - yucky way in which files are passed.
 #        illegal arguments like -xxx are now considered files and then no help
-#     - add option to ls -ltr also 
+#     - lister with folders via CSV
+#     - use typer
+#     - add tests for lister and this code!
+#     - for ignoring exc_dirs and another for ignoring exc_fils
+#     - lower priority
+#     - cleanup usage after hooking up TeeFile with out and err!
+#     -
+#     -
+#     - handling exceptions as in m5 $DBXDIR 1>dbx.md5
 ###############################################################################
-
-from argparse import ArgumentParser
 
 import hashlib
 import mmap
+import os
+import sys
 
-import basern
-from basern.rnutils import ( adjust_winpath, format_bytes )
+from argparse import ArgumentParser
+
+import psutil
+
+from basern.lister import Lister
+from basern.rnutils import ( adjust_winpath, format_bytes, open_resolved )
+from basern.stopwatch import Stopwatch
+from datetime import datetime
+from typing import IO
 
 class Md5:
 
@@ -22,6 +36,9 @@ class Md5:
         self.BLOCK_SZ = 8192
         self.parsed = None
         self.unknown_args = None
+        self.parse_timer = Stopwatch(precision=2)
+        self.lst_timer = Stopwatch(precision=2)
+        self.sum_timer = Stopwatch(precision=3)
 
     def process_block(self, fname: str):
         hasher = hashlib.md5()
@@ -46,19 +63,26 @@ class Md5:
         return hasher.hexdigest()
 
     @staticmethod
-    def process_inline(file_name: str, verbose: int = 0):
+    def process_inline(file_name: str, verbose: int = 0)-> str | None:
         if verbose > 0:
-            print(f"inline: Input filename=[{file_name}]")
+            print(f"process_inline: Input filename=[{file_name}]")
 
-        from basern.rnutils import open_resolved
-        with open_resolved(file_name, verbose = verbose) as ff:
-            digest = hashlib.file_digest(ff, "md5")
-
-        return digest.hexdigest()
+        ff: IO|None=None
+        try:
+            ff = open_resolved(file_name, verbose=verbose)
+            if ff:
+                return hashlib.file_digest(ff, "md5").hexdigest()
+            elif verbose > 0:
+                print(f"{verbose} file_name={file_name} could not be opened")
+        finally:
+            if ff is not None:
+                ff.close()
 
     def parse_args(self, args=None):
+        self.parse_timer.start()
         parser = ArgumentParser(prog='md5',
-                                description="To generate md5 sum of specified files in a platform agnostic way.")
+                                description="To generate md5 sum of specified files in a platform agnostic way."
+                                            "Usage: time m5 -d $BOXDIR 1>aaa; shwm5 aaa")
         parser.add_argument('-v', '--verbose', action='count', default=0, dest="verbose",
                             help="Enable verbosity")
         parser.add_argument('-s', '--short', action='store_true', default=False, dest="short",
@@ -74,6 +98,8 @@ class Md5:
         parser.add_argument('-a', '--after', action='store', dest="after_sep",
                             help="When short is enabled, this parameter is printed after the sum. "
                                  + "In order to minimize addtional \'echo -n " "\' in scripts")
+        parser.add_argument("-d", "--dirs", action="store", dest="dirs",
+                            help="Find all the files in the folder specified via parameter and its sub-folders")
 
         self.parsed, self.unknown_args = parser.parse_known_args(args)
 
@@ -84,6 +110,7 @@ class Md5:
 
         if self.parsed.lsltr:
             self.parsed.short = True
+        self.parse_timer.stop()
 
     @staticmethod
     def parse_lsl(lsl_str: str, raw_byte_count = True, verbose: int = 0):
@@ -120,6 +147,45 @@ class Md5:
             print(f" num={num}, parsed={parsed}")
         return parsed
 
+    def lower_priority(self, verbose:int=0):
+        import psutil
+        p = psutil.Process()
+        old=p.nice()
+        if psutil.WINDOWS:
+            p.nice(psutil.IDLE_PRIORITY_CLASS)
+        else:
+            # On Unix/Linux/macOS, higher nice values mean lower priority (19 is max low)
+            p.nice(19)
+        if verbose>0:
+            print(f"old niceness=[{old}], current=[{p.nice()}]")
+
+    def build_files_list(self) -> list[str]:
+        if not self.parsed.dirs:
+            return []
+
+        self.lst_timer.start()
+        exc_dirs: list[str] = [*Lister.EXCLUDED_DIRS, "Ravi and Megan Weddings", "shp", "vimtmp", "cygwin",
+                               "cygwin64", "Raj Debbad", f"ffox{os.sep}Cache"]
+        if self.parsed.verbose > 2:
+            print(f"excluded dirs = [{exc_dirs}]")
+
+        exc_fils: list[str] = [*Lister.EXCLUDED_EXTS, ".foo" ]
+        if self.parsed.verbose > 2:
+            print(f"excluded files = [{exc_fils}]")
+
+        dirs:list[str]
+        if "," in self.parsed.dirs:
+            dirs=self.parsed.dirs.split(",")
+            self.lower_priority(verbose=self.parsed.verbose)
+        else:
+            dirs=[self.parsed.dirs]
+
+        files: list[str] = []
+        for dd in dirs:
+            files.extend(Lister.deep_search_strs(dd, exclude_dirs=exc_dirs, exclude_exts=exc_fils
+                                            , verbose=self.parsed.verbose, posix_path=True))
+        self.lst_timer.stop()
+        return files
 
 ###### end of md5 class
 
@@ -129,10 +195,26 @@ if __name__ == "__main__":
 
     msum.parse_args()
 
+    #for files with unprintable names
+    # Forces your console output to safely use UTF-8 encoding
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
+    if msum.parsed.dirs:
+        print(f"# {sys.argv} parsed={msum.parse_timer} ({datetime.now().strftime('%a %b %d %H:%M:%S %Z %Y')})"
+              f", nice={psutil.Process().nice()}")
     # preparation to help measure time spent
-    for fname in msum.unknown_args:
+    files: list[str] = msum.unknown_args if not msum.parsed.dirs else msum.build_files_list()
+
+    msum.sum_timer.start()
+    for fname in files:
         the_hash = 'unknown'
-        adjusted = str(adjust_winpath(fname, verbose=msum.parsed.verbose))
+        adj_path = adjust_winpath(fname, verbose=msum.parsed.verbose)
+        if adj_path is None:
+            if msum.parsed.verbose > 0:
+                sys.stderr.write(f"fname={fname} does not exist. Cannot be adjusted\n")
+            continue
+
+        adjusted = str(adj_path)
         try:
             if msum.parsed.use_block:
                 the_hash = msum.process_block(adjusted)
@@ -141,6 +223,8 @@ if __name__ == "__main__":
             else:
                 the_hash = msum.process_inline(adjusted, msum.parsed.verbose)
 
+            if the_hash is None:
+                continue
             end = ""
             if msum.parsed.newline:
                 end = "\n"
@@ -155,13 +239,18 @@ if __name__ == "__main__":
                 if msum.parsed.after_sep:
                     print(f"{msum.parsed.after_sep}", end="")
             else:
-                # fname = (fname.replace("/cygdrive/c/Users/ravi", "~")
-                #          .replace("C:/Users/ravi", "~"))
-                print(f"{the_hash}\t{adjusted}")
-        except (OSError, PermissionError) as e:
-            print(f"{e}\n")
-            if msum.parsed.verbose > 1:
-                import traceback
+                print(f"{the_hash}\t{adj_path.absolute().as_posix()}")
+        except (OSError, PermissionError, FileNotFoundError, WindowsError, UnicodeEncodeError) as e:
+            # if msum.parsed.verbose > 1:
+            #     print(f"{e}\n")
+            # print(f"=== {adj_path.absolute().as_posix()} ===")
+            # import traceback
+            #
+            # traceback.print_exc(e)
+            print(f"{adjusted}\n\n")
 
-                traceback.print_exc()
-            print("\n")
+    # finished looping
+    msum.sum_timer.stop()
+    if msum.parsed.dirs:
+        print(f"# Total number={len(files)}, gen_sums={msum.sum_timer}, list={msum.lst_timer}"
+              f", nice={psutil.Process().nice()}")
