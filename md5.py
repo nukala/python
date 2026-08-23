@@ -4,15 +4,15 @@
 # WIP - due to mmap
 #     - yucky way in which files are passed.
 #        illegal arguments like -xxx are now considered files and then no help
-#     - lister with folders via CSV
 #     - use typer
 #     - add tests for lister and this code!
-#     - for ignoring exc_dirs and another for ignoring exc_fils
-#     - lower priority
+#     - Option for ignoring all excludes dirs&files. Individual is overkill
 #     - cleanup usage after hooking up TeeFile with out and err!
+#     - option for short path
+#     - support for groovy options=" -b -f -noout"; backup, write to file, nooutput
 #     -
 #     -
-#     - handling exceptions as in m5 $DBXDIR 1>dbx.md5
+#     - grep -v Cache aaa | grep -v github | grep -v 26[a-z][a-z][a-z][0-9]| sort 1>as
 ###############################################################################
 
 import hashlib
@@ -147,7 +147,15 @@ class Md5:
             print(f" num={num}, parsed={parsed}")
         return parsed
 
-    def lower_priority(self, verbose:int=0):
+
+    @staticmethod
+    def lower_priority(verbose:int=0):
+        """
+        Lower priority to IDLE (windows) and super-nice (else) 
+
+        Args:
+          verbose:  if>0 show old and new nice-levels, else show nothing!
+        """
         import psutil
         p = psutil.Process()
         old=p.nice()
@@ -159,13 +167,14 @@ class Md5:
         if verbose>0:
             print(f"old niceness=[{old}], current=[{p.nice()}]")
 
+
     def build_files_list(self) -> list[str]:
         if not self.parsed.dirs:
             return []
 
         self.lst_timer.start()
-        exc_dirs: list[str] = [*Lister.EXCLUDED_DIRS, "Ravi and Megan Weddings", "shp", "vimtmp", "cygwin",
-                               "cygwin64", "Raj Debbad", f"ffox{os.sep}Cache"]
+        exc_dirs: list[str] = [*Lister.EXCLUDED_DIRS, "Ravi and Megan Weddings", "shp", "vimtmp",
+                               "cygwin", "cygwin64", "Raj Debbad"]
         if self.parsed.verbose > 2:
             print(f"excluded dirs = [{exc_dirs}]")
 
@@ -199,7 +208,7 @@ if __name__ == "__main__":
     # Forces your console output to safely use UTF-8 encoding
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
-    if msum.parsed.dirs:
+    if msum.parsed.dirs or msum.parsed.verbose>1:
         print(f"# {sys.argv} parsed={msum.parse_timer} ({datetime.now().strftime('%a %b %d %H:%M:%S %Z %Y')})"
               f", nice={psutil.Process().nice()}")
     # preparation to help measure time spent
@@ -251,6 +260,6 @@ if __name__ == "__main__":
 
     # finished looping
     msum.sum_timer.stop()
-    if msum.parsed.dirs:
+    if msum.parsed.dirs or msum.parsed.verbose>1:
         print(f"# Total number={len(files)}, gen_sums={msum.sum_timer}, list={msum.lst_timer}"
               f", nice={psutil.Process().nice()}")

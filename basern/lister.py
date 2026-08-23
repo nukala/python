@@ -4,17 +4,19 @@ from pathlib import Path
 
 # Read the directory path directly
 class Lister:
-    EXCLUDED_DIRS: list[str] = ["venv", ".git", "__pycache__", "target", "lib", ".idea", ".pytest_cache",
-                                "classes", "Cache" ]
-    EXCLUDED_EXTS: list[str] = [".pyc", ".pyo", ".gitignore", ".ghsvd", ".ear", ".tar", ".war", ".o", ".obj"]
+    # js files seem to live in "lib" folder, so dont exclude
+    EXCLUDED_DIRS: list[str] = ["venv", ".git", "__pycache__", "target", "build", "out", ".idea"
+        , ".pytest_cache", "classes", "Cache" ]
+    EXCLUDED_EXTS: list[str] = [".pyc", ".pyo", ".gitignore", ".ghsvd", ".class", ".ear", ".tar", ".war", ".o", ".obj"]
 
     @staticmethod
     def is_dir_excluded(dir_path: Path, exclude_dirs: list[str], verbose:int=0) -> bool:
         dir_name = dir_path.name
         for bad_dir in exclude_dirs:
-            if bad_dir in dir_name:
+            # exact match, else Cache will exclude redis/cache/src
+            if bad_dir == dir_name:
                 if verbose > 5:
-                    print(f">>> excluding dir '{dir_path}' due to {bad_dir}")
+                    print(f">>> excluding dir '{dir_path}({dir_name})' due to {bad_dir}")
                 return True
 
         return False
