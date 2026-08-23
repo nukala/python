@@ -25,6 +25,7 @@ from argparse import ArgumentParser
 import psutil
 
 from basern.lister import Lister
+from basern.proc_utils import ProcUtils
 from basern.rnutils import ( adjust_winpath, format_bytes, open_resolved )
 from basern.stopwatch import Stopwatch
 from datetime import datetime
@@ -37,7 +38,7 @@ class Md5:
         self.parsed = None
         self.unknown_args = None
         self.parse_timer = Stopwatch(precision=2)
-        self.lst_timer = Stopwatch(precision=2)
+        self.lst_timer = Stopwatch(precision=0)
         self.sum_timer = Stopwatch(precision=3)
 
     def process_block(self, fname: str):
@@ -147,27 +148,6 @@ class Md5:
             print(f" num={num}, parsed={parsed}")
         return parsed
 
-
-    @staticmethod
-    def lower_priority(verbose:int=0):
-        """
-        Lower priority to IDLE (windows) and super-nice (else) 
-
-        Args:
-          verbose:  if>0 show old and new nice-levels, else show nothing!
-        """
-        import psutil
-        p = psutil.Process()
-        old=p.nice()
-        if psutil.WINDOWS:
-            p.nice(psutil.IDLE_PRIORITY_CLASS)
-        else:
-            # On Unix/Linux/macOS, higher nice values mean lower priority (19 is max low)
-            p.nice(19)
-        if verbose>0:
-            print(f"old niceness=[{old}], current=[{p.nice()}]")
-
-
     def build_files_list(self) -> list[str]:
         if not self.parsed.dirs:
             return []
@@ -176,16 +156,16 @@ class Md5:
         exc_dirs: list[str] = [*Lister.EXCLUDED_DIRS, "Ravi and Megan Weddings", "shp", "vimtmp",
                                "cygwin", "cygwin64", "Raj Debbad"]
         if self.parsed.verbose > 2:
-            print(f"excluded dirs = [{exc_dirs}]")
+            print(f"excluded dirs = [{" ".join(exc_dirs)}]")
 
         exc_fils: list[str] = [*Lister.EXCLUDED_EXTS, ".foo" ]
         if self.parsed.verbose > 2:
-            print(f"excluded files = [{exc_fils}]")
+            print(f"excluded files = [{" ".join(exc_fils)}]")
 
         dirs:list[str]
         if "," in self.parsed.dirs:
             dirs=self.parsed.dirs.split(",")
-            self.lower_priority(verbose=self.parsed.verbose)
+            ProcUtils.lower_priority(verbose=self.parsed.verbose)
         else:
             dirs=[self.parsed.dirs]
 
@@ -209,8 +189,8 @@ if __name__ == "__main__":
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
     if msum.parsed.dirs or msum.parsed.verbose>1:
-        print(f"# {sys.argv} parsed={msum.parse_timer} ({datetime.now().strftime('%a %b %d %H:%M:%S %Z %Y')})"
-              f", nice={psutil.Process().nice()}")
+        print(f"# [ {" ".join(sys.argv[1:])} ]  ({datetime.now().strftime('%a %b %d %H:%M:%S %Z %Y')})"
+              f", begin nice={psutil.Process().nice()}")
     # preparation to help measure time spent
     files: list[str] = msum.unknown_args if not msum.parsed.dirs else msum.build_files_list()
 
@@ -261,5 +241,5 @@ if __name__ == "__main__":
     # finished looping
     msum.sum_timer.stop()
     if msum.parsed.dirs or msum.parsed.verbose>1:
-        print(f"# Total number={len(files)}, gen_sums={msum.sum_timer}, list={msum.lst_timer}"
-              f", nice={psutil.Process().nice()}")
+        print(f"# Total number={len(files)}, gen_sums={msum.sum_timer}, files_list={msum.lst_timer}"
+              f", parsed={msum.parse_timer}, nice={psutil.Process().nice()}")
