@@ -38,8 +38,9 @@ class Md5:
         self.parsed = None
         self.unknown_args = None
         self.parse_timer = Stopwatch(precision=2)
+        self.lsl_timer = Stopwatch(precision=1)
         self.lst_timer = Stopwatch(precision=0)
-        self.sum_timer = Stopwatch(precision=3)
+        self.sum_timer = Stopwatch()
 
     def process_block(self, fname: str):
         hasher = hashlib.md5()
@@ -205,12 +206,14 @@ if __name__ == "__main__":
 
         adjusted = str(adj_path)
         try:
+            msum.sum_timer.start()
             if msum.parsed.use_block:
                 the_hash = msum.process_block(adjusted)
             elif msum.parsed.use_mmap:
                 the_hash = msum.process_mmap(adjusted)
             else:
                 the_hash = msum.process_inline(adjusted, msum.parsed.verbose)
+            msum.sum_timer.stop()
 
             if the_hash is None:
                 continue
@@ -223,8 +226,10 @@ if __name__ == "__main__":
                     # lsl = getoutput_from_run(['ls', '-ltr', adjusted], None,
                     #                          show_result=False, show_output=False, show_error=False)['stdout']
                     # print(f"  {msum.parse_lsl(lsl, raw_byte_count=True, verbose=msum.parsed.verbose)}")
+                    msum.lsl_timer.start()
                     from basern.file_info import format_ls_name
                     print(f"  {format_ls_name(adjusted, use_absolute=True)}")
+                    msum.lsl_timer.stop()
                 if msum.parsed.after_sep:
                     print(f"{msum.parsed.after_sep}", end="")
             else:
@@ -238,8 +243,8 @@ if __name__ == "__main__":
             # traceback.print_exc(e)
             print(f"{adjusted}\n\n")
 
-    # finished looping
-    msum.sum_timer.stop()
     if msum.parsed.dirs or msum.parsed.verbose>1:
+        lsl_str = f"lsl={msum.lsl_timer}, " if msum.parsed.lsltr else ""
+
         print(f"# Total number={len(files)}, gen_sums={msum.sum_timer}, files_list={msum.lst_timer}"
-              f", parsed={msum.parse_timer}, nice={psutil.Process().nice()}")
+              f", parsed={msum.parse_timer}, {lsl_str}nice={psutil.Process().nice()}")
