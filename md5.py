@@ -4,40 +4,69 @@
 # WIP - due to mmap
 #     - yucky way in which files are passed.
 #        illegal arguments like -xxx are now considered files and then no help
-#     - use typer
-#     - add tests for lister and this code!
-#     - Option for ignoring all excludes dirs&files. Individual is overkill
-#     - cleanup usage after hooking up TeeFile with out and err!
-#     - option for short path
-#     - support for groovy options=" -b -f -noout"; backup, write to file, nooutput
+#     Missing CLI options:
+#       missing/broken options with typer ---after for lsep
+#       add tests for lister and this code!
+#       support multiple -d options instead of CSV!
+#       Option for ignoring all excludes dirs&files. Individual is overkill
+#       cleanup usage after hooking up TeeFile with out and err!
+#       support for groovy options=" -b -f -noout"; backup, write to file, nooutput
+#       add for short path vs absolute
 #     -
 #     -
 #     - grep -v Cache aaa | grep -v github | grep -v 26[a-z][a-z][a-z][0-9]| sort 1>as
 ###############################################################################
+from __future__ import annotations
 
 import hashlib
 import mmap
-import os
-import sys
-
-from argparse import ArgumentParser
-
 import psutil
+import sys
+import typer
 
+from basern.file_info import format_ls_name
 from basern.lister import Lister
 from basern.proc_utils import ProcUtils
 from basern.rnutils import ( adjust_winpath, format_bytes, open_resolved )
 from basern.stopwatch import Stopwatch
+from dataclasses import dataclass
 from datetime import datetime
-from typing import IO
+from pathlib import Path
+from typing import IO, List, Annotated, Final
+
+# remove the completion related help text
+# , "ignore_unknown_options": True
+app = typer.Typer(add_completion=False,
+                  context_settings={"help_option_names": ["-h", "--help", "-?"],
+                                    "allow_extra_args": True, 
+                                    "ignore_unknown_options": True, })
+
 
 class Md5:
 
+    @dataclass
+    class MdConfig:
+        directories: List[str]=None
+        backup: bool=True
+        force: bool=False
+        verbosity: int=0
+        full_path: bool=False
+        lsltr: bool=False
+        sum_only: bool=False
+        format_size: bool=False
+        short_sep: str=""
+
+        def dump_config(self, message:str="", dirs_also:bool=False) -> str:
+            dirs_str = f"\ndirs={self.directories}" if dirs_also else ""
+            return (f"{message}DUMP: backup={self.backup}, force={self.force}, verbosity={self.verbosity}," +
+                    f"full_path={self.full_path}, lsltr={self.lsltr}, short={self.sum_only}, " +
+                    f"format_size={self.format_size}, short_sep={self.short_sep}" +
+                    f"{dirs_str}")
+
     def __init__(self):
-        self.BLOCK_SZ = 8192
+        self.BLOCK_SZ = 2*8_192
         self.parsed = None
         self.unknown_args = None
-        self.parse_timer = Stopwatch(precision=2)
         self.lsl_timer = Stopwatch(precision=1)
         self.lst_timer = Stopwatch(precision=0)
         self.sum_timer = Stopwatch()
@@ -80,171 +109,161 @@ class Md5:
             if ff is not None:
                 ff.close()
 
-    def parse_args(self, args=None):
-        self.parse_timer.start()
-        parser = ArgumentParser(prog='md5',
-                                description="To generate md5 sum of specified files in a platform agnostic way."
-                                            "Usage: time m5 -d $BOXDIR 1>aaa; shwm5 aaa")
-        parser.add_argument('-v', '--verbose', action='count', default=0, dest="verbose",
-                            help="Enable verbosity")
-        parser.add_argument('-s', '--short', action='store_true', default=False, dest="short",
-                            help="Short output, no filename, no CRLF or LF")
-        parser.add_argument("-nl", "--new_line", action="store_true", dest="newline",
-                            help="terminate with a new line")
-        parser.add_argument('--mmap', "--memory_map", action='store_true', default=False,
-                            dest="use_mmap", help="Use memory mapped files. DOES NOT WORK")
-        parser.add_argument('--block', "--use_block", action='store_true', default=False,
-                            dest="use_block", help="Use slower hashlib based operations")
-        parser.add_argument("-l", "--lsltr", "--ls-ltr", action='store_true', default=False,
-                            dest="lsltr", help="Execute ls -ltr on the file")
-        parser.add_argument('-a', '--after', action='store', dest="after_sep",
-                            help="When short is enabled, this parameter is printed after the sum. "
-                                 + "In order to minimize addtional \'echo -n " "\' in scripts")
-        parser.add_argument("-d", "--dirs", action="store", dest="dirs",
-                            help="Find all the files in the folder specified via parameter and its sub-folders")
+    @app.command(help="Generate MD5 sums of files and folders "
+                      "\n  as specified via CLI switches !")
+    def entry_point(
+            ctx: typer.Context,
+            dirs: Annotated[List[str], typer.Option("-d", "--dir", help="List of directories")]=None,
+            force: Annotated[bool, typer.Option("-f", "--force", help="Force rewrite even if the output file exists already")]=False,
+            posix: Annotated[bool, typer.Option("-p", "-fp", "--full_path", help="Use absolute posix paths")]=False,
+            lsltr: Annotated[bool, typer.Option("-l", "-lsltr", "--lsltr",
+                                                help="Show file size and modification dates")]=False,
+            sum_only: Annotated[bool, typer.Option("-s", "-short", "--short", help="Short, only sum is printed")]=False,
+            format_size: Annotated[bool, typer.Option("-fs", "--format_size", help="Format size into kB, etc.",)]=False,
+            after_sep: Annotated[str, typer.Option("-a", "--after", help="ONLY when short is enabled, use this separator."
+                                                                         "In order to minimize addtional 'echo -n ' in scripts")]="",
 
-        self.parsed, self.unknown_args = parser.parse_known_args(args)
+            verbosity: Annotated[int, typer.Option("-v", count=True,
+                                                       help="Set verbosity level. Use -v for warning, -vv for info, -vvv for debug.")] = 0,
+            vlevel: Annotated[int, typer.Option("--verbosity", "-vrb",
+                                                    help="Specify a verbosity level, 1=warning, 2=info,3=debug etc.")] = 0,
+    ):
+        if vlevel>0:
+            verbosity=vlevel
 
-        if self.parsed.short and len(self.unknown_args) > 1:
-            raise Exception(f"Short={self.parsed.short} and unknown_args{self.unknown_args}"
-                            f".len={len(self.unknown_args)} are not compatible"
-                            f"\nONLY one file_name is allowed!")
+        # prepare config
+        cfg: Md5.MdConfig = Md5.MdConfig(force=force, verbosity=verbosity)
+        if dirs:
+            cfg.directories=dirs
+        cfg.full_path = posix
+        cfg.lsltr = lsltr
+        cfg.sum_only = sum_only
+        cfg.format_size = format_size
+        cfg.short_sep=after_sep
 
-        if self.parsed.lsltr:
-            self.parsed.short = True
-        self.parse_timer.stop()
+        # supply config into context, if there are other commands!
+        ctx.obj = cfg
 
-    @staticmethod
-    def parse_lsl(lsl_str: str, raw_byte_count = True, verbose: int = 0):
-        """
-        Parses ls -ltr output, removes permissions and owner-group details.
-        Shows only size and modification dates. Filename too
+        if cfg.verbosity>2:
+            print(f"{cfg.verbosity} - cfg={cfg}-{cfg.dump_config()}")
 
-        So:
-          -rwxr-xr-x 1 ravi None 1690 Nov 10 14:13 FILE_NAME
-        becomes
-          1690 Nov 10 14:13 FILE_NAME
+        # instantiate worker object
+        msum: Md5 = Md5()
+        # invoke business logic of this script
+        msum.biz_logic(cfg, ctx.args)
 
-        Args:
-            lsl_str: String output from `ls -ltr FN`
-            raw_byte_count: show count as bytes (default True)
-                            False - formats the size in KB and MB
-            verbose: show verbose output
-        """
-        if verbose > 1:
-            print(f"Input lsl=[{lsl_str}]")
-        parts = lsl_str.split(" ")
-        num: int = len(parts)
 
-        if num <= 0:
-            return ""
-
-        if raw_byte_count:
-            parsed = " ".join(parts[4:])
+    def biz_logic(self, cfg: Md5.MdConfig, args:list[str]):
+        self.begin_work(cfg.directories, cfg.verbosity)
+        files: list[str]
+        if cfg.directories:
+            files = self.build_files_list(cfg.directories, verbosity=cfg.verbosity)
         else:
-            sz = format_bytes(parts[4]) + " "
-            parsed = sz + " ".join(parts[5:])
+            files = args
 
-        if verbose >= 1:
-            print(f" num={num}, parsed={parsed}")
-        return parsed
+        if cfg.verbosity>5:
+            print(f"v={cfg.verbosity} files[{files}].{len(files)}")
+        for fname in files:
+            adj_path = adjust_winpath(fname, verbose=cfg.verbosity > 0)
+            adjusted = str(adj_path or "")
 
-    def build_files_list(self) -> list[str]:
-        if not self.parsed.dirs:
+            try:
+                the_hash = self.calculate_hash(fname, verbosity=cfg.verbosity)
+                if not the_hash:
+                    continue
+                print(f"{self.build_output(cfg, adj_path, the_hash)}", end=f"{self.build_end(cfg)}")
+            except (OSError, PermissionError, FileNotFoundError, WindowsError, UnicodeEncodeError) as e:
+                print(f"{adjusted}\n\n")
+
+        self.end_work(cfg.directories, files, cfg.verbosity)
+
+    def build_end(self, cfg: Md5.MdConfig) -> str:
+        # for now 
+        return '' if cfg.sum_only else '\n'
+    
+    def build_output(self, cfg: Md5.MdConfig, adj_path: Path, hash: str) -> str:
+        answer: str = f"{hash}"
+
+        if cfg.verbosity>1:
+            print(f" {cfg.verbosity} - {cfg.dump_config()}")
+
+        if cfg.sum_only:
+            return f"{answer}{cfg.short_sep}"
+        if cfg.lsltr:
+            answer=f"{answer}  {format_ls_name(adj_path, use_absolute=not cfg.format_size)}"
+            return answer
+
+        if cfg.full_path:
+            answer=f"{answer} {adj_path.absolute().as_posix()}"
+        else:
+            answer=f"{answer} {adj_path.name}"
+
+        return answer
+    
+    @staticmethod
+    def get_file_name(file_name: str, full_path: bool=False) -> str:
+        return Path(file_name).absolute().as_posix() if full_path else file_name
+
+    def build_files_list(self, dirs: list[str], verbosity=0) -> list[str]:
+        if not dirs:
             return []
 
         self.lst_timer.start()
-        exc_dirs: list[str] = [*Lister.EXCLUDED_DIRS, "Ravi and Megan Weddings", "shp", "vimtmp",
-                               "cygwin", "cygwin64", "Raj Debbad"]
-        if self.parsed.verbose > 2:
+        exc_dirs: list[str] = [*Lister.EXCLUDED_DIRS, "shp", "vimtmp",
+                               "cygwin", "cygwin64", "Raj Debbad", "Ravi and Megan Weddings",]
+        if verbosity > 2:
             print(f"excluded dirs = [{" ".join(exc_dirs)}]")
 
-        exc_fils: list[str] = [*Lister.EXCLUDED_EXTS, ".foo" ]
-        if self.parsed.verbose > 2:
+        exc_fils: list[str] = [*Lister.EXCLUDED_EXTS, ".foo",]
+        if verbosity > 2:
             print(f"excluded files = [{" ".join(exc_fils)}]")
 
-        dirs:list[str]
-        if "," in self.parsed.dirs:
-            dirs=self.parsed.dirs.split(",")
-            ProcUtils.lower_priority(verbose=self.parsed.verbose)
-        else:
-            dirs=[self.parsed.dirs]
+        if len(dirs) > 1:
+            ProcUtils.lower_priority(verbose=verbosity)
 
         files: list[str] = []
         for dd in dirs:
             files.extend(Lister.deep_search_strs(dd, exclude_dirs=exc_dirs, exclude_exts=exc_fils
-                                            , verbose=self.parsed.verbose, posix_path=True))
+                                                 , verbose=verbosity, posix_path=True))
         self.lst_timer.stop()
         return files
+
+    def calculate_hash(self, adjusted: str, verbosity: int = 0):
+        the_hash: str|None
+        self.sum_timer.start()
+        # if self.parsed.use_block:
+        #     the_hash = self.process_block(adjusted)
+        # elif self.parsed.use_mmap:
+        #     the_hash = self.process_mmap(adjusted)
+        # else:
+        the_hash = self.process_inline(adjusted, verbosity)
+        self.sum_timer.stop()
+
+        return the_hash
+
+    @staticmethod
+    def begin_work(dirs: list[str], verbosity: int = 0):
+        if len(dirs or []) > 1 or verbosity > 0:
+            print(f"# [ {" ".join(sys.argv[1:])} ]  ({datetime.now().strftime('%a %b %d %H:%M:%S %Z %Y')})"
+                  f", begin nice={psutil.Process().nice()}")
+
+    def end_work(self, dirs: list[str], files: list[str], verbosity: int = 0):
+        if len(dirs or []) > 1 or verbosity > 0:
+            lsl_str = f"lsl={self.lsl_timer}, " if self.lsl_timer.elapsed_seconds else ""
+            lst_str = f"list_files={self.lst_timer}, " if self.lst_timer.elapsed_seconds else ""
+
+            print(f"# Total number={len(files or [])}, gen_sums={self.sum_timer}, "
+                  f"{lst_str}{lsl_str}nice={psutil.Process().nice()}")
 
 ###### end of md5 class
 
 if __name__ == "__main__":
-    # fname = sys.argv[1]
-    msum = Md5()
-
-    msum.parse_args()
-
-    #for files with unprintable names
+    # for files with unprintable names
     # Forces your console output to safely use UTF-8 encoding
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
-    if msum.parsed.dirs or msum.parsed.verbose>1:
-        print(f"# [ {" ".join(sys.argv[1:])} ]  ({datetime.now().strftime('%a %b %d %H:%M:%S %Z %Y')})"
-              f", begin nice={psutil.Process().nice()}")
-    # preparation to help measure time spent
-    files: list[str] = msum.unknown_args if not msum.parsed.dirs else msum.build_files_list()
+    # fname = sys.argv[1]
+    # msum = Md5()
+    # msum.legacy_work()
+    app()
 
-    msum.sum_timer.start()
-    for fname in files:
-        the_hash = 'unknown'
-        adj_path = adjust_winpath(fname, verbose=msum.parsed.verbose)
-        if adj_path is None:
-            if msum.parsed.verbose > 0:
-                sys.stderr.write(f"fname={fname} does not exist. Cannot be adjusted\n")
-            continue
-
-        adjusted = str(adj_path)
-        try:
-            msum.sum_timer.start()
-            if msum.parsed.use_block:
-                the_hash = msum.process_block(adjusted)
-            elif msum.parsed.use_mmap:
-                the_hash = msum.process_mmap(adjusted)
-            else:
-                the_hash = msum.process_inline(adjusted, msum.parsed.verbose)
-            msum.sum_timer.stop()
-
-            if the_hash is None:
-                continue
-            end = ""
-            if msum.parsed.newline:
-                end = "\n"
-            if msum.parsed.short:
-                print(f"{the_hash}", end=f"{end}")
-                if msum.parsed.lsltr:
-                    # lsl = getoutput_from_run(['ls', '-ltr', adjusted], None,
-                    #                          show_result=False, show_output=False, show_error=False)['stdout']
-                    # print(f"  {msum.parse_lsl(lsl, raw_byte_count=True, verbose=msum.parsed.verbose)}")
-                    msum.lsl_timer.start()
-                    from basern.file_info import format_ls_name
-                    print(f"  {format_ls_name(adjusted, use_absolute=True)}")
-                    msum.lsl_timer.stop()
-                if msum.parsed.after_sep:
-                    print(f"{msum.parsed.after_sep}", end="")
-            else:
-                print(f"{the_hash}\t{adj_path.absolute().as_posix()}")
-        except (OSError, PermissionError, FileNotFoundError, WindowsError, UnicodeEncodeError) as e:
-            # if msum.parsed.verbose > 1:
-            #     print(f"{e}\n")
-            # print(f"=== {adj_path.absolute().as_posix()} ===")
-            # import traceback
-            #
-            # traceback.print_exc(e)
-            print(f"{adjusted}\n\n")
-
-    if msum.parsed.dirs or msum.parsed.verbose>1:
-        lsl_str = f"lsl={msum.lsl_timer}, " if msum.parsed.lsltr else ""
-
-        print(f"# Total number={len(files)}, gen_sums={msum.sum_timer}, files_list={msum.lst_timer}"
-              f", parsed={msum.parse_timer}, {lsl_str}nice={psutil.Process().nice()}")

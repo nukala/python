@@ -43,9 +43,10 @@ clean:
 	@echo ""
 
 # to add a new "requirement" 
-#  ${PIP} install --dry-run pyclip
+#  ${PIP} install --verbose --dry-run pyclip
 #  ${PIP} install --verbose pyclip
-#  ${PIP} install -r requirements.txt --upgrade --verbose
-#  ${PYTHON} -m pip install --upgrade pip --verbose
-#  ${PIP} install --ignore-installed --local --verbose --dry-run pyclip
-#  ${PIP} install --break-system-packages --verbose --dry-run pandas
+#  ${PIP} install --verbose -r requirements.txt --upgrade 
+#  ${PYTHON} -m pip install --verbose --upgrade pip 
+#  ${PIP} install --verbose --ignore-installed --local --dry-run pyclip
+#  ${PIP} install --verbose --break-system-packages --verbose --dry-run pandas
+#  ${PIP} -m pip install --verbose --force-reinstall pillow

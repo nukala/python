@@ -29,13 +29,16 @@ from typing import Annotated, Final
 #
 
 # remove the completion related help text
-cli = typer.Typer(add_completion=False)
+cli = typer.Typer(add_completion=False,
+                  context_settings={"help_option_names": ["-h", "--help", "-?",],
+                                    "allow_extra_args": True,
+                                    "ignore_unknown_options": True, })
 
 
 class HideLock:
     @dataclass
     class HlConfig:
-	# no need for subfolder, since we use ONLY one file all the time
+        # no need for subfolder, since we use ONLY one file all the time
         SUB_FOLDER: Final[str] = ""
         HL_FILE_NAME: Final[str] = "hl.txt"
 
@@ -55,7 +58,7 @@ class HideLock:
         keep: Annotated[bool, typer.Option(help="Do not delete the log file on next day, just keep appending.")]=False,
 	show_file: Annotated[bool, typer.Option(help="Show contents of old file before deleting. Ignore keep for now")]=True,
 
-        help: Annotated[bool, typer.Option("-h", help="show this help text")]=False,
+        # help: Annotated[bool, typer.Option("-h", help="show this help text")]=False,
             ) -> None:
         """
         To indicate the laptop was opened. Recommended to use only when opened for the first time. There is no 
@@ -84,7 +87,7 @@ class HideLock:
             help="Laptop opened, indicate so in the log. default=off.")]=False,
         keep: Annotated[bool, typer.Option(help="Do not delete the log file on next day, just keep appending.")]=False,
         
-        help: Annotated[bool, typer.Option("-h", help="show this help text")]=False,
+        # help: Annotated[bool, typer.Option("-h", help="show this help text")]=False,
             ) -> None:
         """
         Shows the current available battery percentage, appends to a log file, clears the screen and con-catenates log-file contents onto the screen. Also, deletes the log-file if day changes from 14th to 15th say
@@ -109,7 +112,7 @@ class HideLock:
     def cat(ctx: typer.Context,
             clear: Annotated[bool, typer.Option(help="Clear screen before concatenating log file")]=True,
     
-            help: Annotated[bool, typer.Option("-h", help="show this help text")]=False,
+            # help: Annotated[bool, typer.Option("-h", help="show this help text")]=False,
             ) -> None:
         hl: HideLock=HideLock()
         cfg: HideLock.HlConfig=ctx.obj
@@ -233,7 +236,7 @@ class HideLock:
         keep: Annotated[bool, typer.Option(help="Do not delete the log file on next day, just keep appending.")]=False,
 
         # explicitly adding this seems to enable `-h`
-        help: Annotated[bool, typer.Option("-h", help="show this help text")]=False,
+        # help: Annotated[bool, typer.Option("-h", help="show this help text")]=False,
         verbosity: Annotated[int, typer.Option("-v", count=True, 
             help="Set verbosity level. Use -v for warning, -vv for info, -vvv for debug.") ]=0,
         vlevel: Annotated[int, typer.Option("--verbosity", "-vrb",

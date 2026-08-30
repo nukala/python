@@ -5,7 +5,7 @@ from pathlib import Path
 # Read the directory path directly
 class Lister:
     # js files seem to live in "lib" folder, so dont exclude
-    EXCLUDED_DIRS: list[str] = ["venv", ".git", "__pycache__", "target", "build", "out", ".idea"
+    EXCLUDED_DIRS: list[str] = ["venv", ".venv", ".git", ".svn", "__pycache__", "target", "build", "out", ".idea"
         , ".pytest_cache", "classes", "Cache" ]
     EXCLUDED_EXTS: list[str] = [".pyc", ".pyo", ".gitignore", ".ghsvd", ".class", ".ear", ".tar", ".war", ".o", ".obj"]
 
