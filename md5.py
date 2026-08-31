@@ -36,7 +36,7 @@ from typing import IO, List, Annotated, Final
 
 # remove the completion related help text
 # , "ignore_unknown_options": True
-app = typer.Typer(add_completion=False,
+app = typer.Typer(add_completion=False, rich_markup_mode="markdown", name="md5",
                   context_settings={"help_option_names": ["-h", "--help", "-?"],
                                     "allow_extra_args": True, 
                                     "ignore_unknown_options": True, })
@@ -58,7 +58,8 @@ class Md5:
 
         def dump_config(self, message:str="", dirs_also:bool=False) -> str:
             dirs_str = f"\ndirs={self.directories}" if dirs_also else ""
-            return (f"{message}DUMP: backup={self.backup}, force={self.force}, verbosity={self.verbosity}," +
+            msg_str = f"{message}-" if len(message or "") > 0 else ""
+            return (f"{msg_str}DUMP: backup={self.backup}, force={self.force}, verbosity={self.verbosity}," +
                     f"full_path={self.full_path}, lsltr={self.lsltr}, short={self.sum_only}, " +
                     f"format_size={self.format_size}, short_sep={self.short_sep}" +
                     f"{dirs_str}")
@@ -109,13 +110,12 @@ class Md5:
             if ff is not None:
                 ff.close()
 
-    @app.command(help="Generate MD5 sums of files and folders "
-                      "\n  as specified via CLI switches !")
+    @app.command()
     def entry_point(
             ctx: typer.Context,
             dirs: Annotated[List[str], typer.Option("-d", "--dir", help="List of directories")]=None,
             force: Annotated[bool, typer.Option("-f", "--force", help="Force rewrite even if the output file exists already")]=False,
-            posix: Annotated[bool, typer.Option("-p", "-fp", "--full_path", help="Use absolute posix paths")]=False,
+            #posix: Annotated[bool, typer.Option("-p", "-fp", "--full_path", help="Use absolute posix paths")]=False,
             lsltr: Annotated[bool, typer.Option("-l", "-lsltr", "--lsltr",
                                                 help="Show file size and modification dates")]=False,
             sum_only: Annotated[bool, typer.Option("-s", "-short", "--short", help="Short, only sum is printed")]=False,
@@ -128,6 +128,14 @@ class Md5:
             vlevel: Annotated[int, typer.Option("--verbosity", "-vrb",
                                                     help="Specify a verbosity level, 1=warning, 2=info,3=debug etc.")] = 0,
     ):
+        """
+        Generate md5 sums for files and folders
+	as specified via flags!
+
+	Potential bugs WIP
+	- Always generates absolute file names
+	- format_size does not work in the base code
+        """
         if vlevel>0:
             verbosity=vlevel
 
@@ -135,7 +143,7 @@ class Md5:
         cfg: Md5.MdConfig = Md5.MdConfig(force=force, verbosity=verbosity)
         if dirs:
             cfg.directories=dirs
-        cfg.full_path = posix
+        #cfg.full_path = posix
         cfg.lsltr = lsltr
         cfg.sum_only = sum_only
         cfg.format_size = format_size
@@ -145,7 +153,7 @@ class Md5:
         ctx.obj = cfg
 
         if cfg.verbosity>2:
-            print(f"{cfg.verbosity} - cfg={cfg}-{cfg.dump_config()}")
+            print(f"{cfg.verbosity} - {cfg.dump_config("entry_point")}")
 
         # instantiate worker object
         msum: Md5 = Md5()
@@ -164,6 +172,8 @@ class Md5:
         if cfg.verbosity>5:
             print(f"v={cfg.verbosity} files[{files}].{len(files)}")
         for fname in files:
+            if cfg.verbosity>4:
+                print(f"v={cfg.verbosity} file=[{fname}]")
             adj_path = adjust_winpath(fname, verbose=cfg.verbosity > 0)
             adjusted = str(adj_path or "")
 
@@ -184,9 +194,6 @@ class Md5:
     def build_output(self, cfg: Md5.MdConfig, adj_path: Path, hash: str) -> str:
         answer: str = f"{hash}"
 
-        if cfg.verbosity>1:
-            print(f" {cfg.verbosity} - {cfg.dump_config()}")
-
         if cfg.sum_only:
             return f"{answer}{cfg.short_sep}"
         if cfg.lsltr:
@@ -196,7 +203,7 @@ class Md5:
         if cfg.full_path:
             answer=f"{answer} {adj_path.absolute().as_posix()}"
         else:
-            answer=f"{answer} {adj_path.name}"
+            answer=f"{answer} {adj_path}"
 
         return answer
     

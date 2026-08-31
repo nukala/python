@@ -16,7 +16,7 @@ class Lister:
             # exact match, else Cache will exclude redis/cache/src
             if bad_dir == dir_name:
                 if verbose > 5:
-                    print(f">>> excluding dir '{dir_path}({dir_name})' due to {bad_dir}")
+                    print(f">>> excluding dir='{dir_path}({dir_name})' due to {bad_dir}")
                 return True
 
         return False
@@ -46,8 +46,6 @@ class Lister:
 
         items: list[Path] = []
         try:
-            if verbose>3:
-                print(f"Excluded directory={exclude_dirs}")
             for dir_path in the_dirs:
                 for file_path in dir_path.iterdir():
                     try:
