@@ -725,40 +725,40 @@ def clear_screen() -> None:
 
 
 #### FIND A BETTER HOME ####
-    def parse_lsl(lsl_str: str, raw_byte_count = True, verbose: int = 0):
-        """
-        Parses ls -ltr output, removes permissions and owner-group details.
-        Shows only size and modification dates. Filename too
+def parse_lsl(lsl_str: str, raw_byte_count = True, verbose: int = 0):
+    """
+    Parses ls -ltr output, removes permissions and owner-group details.
+    Shows only size and modification dates. Filename too
 
-        So:
-          -rwxr-xr-x 1 ravi None 1690 Nov 10 14:13 FILE_NAME
-        becomes
-          1690 Nov 10 14:13 FILE_NAME
+    So:
+      -rwxr-xr-x 1 ravi None 1690 Nov 10 14:13 FILE_NAME
+    becomes
+      1690 Nov 10 14:13 FILE_NAME
 
-        Args:
-            lsl_str: String output from `ls -ltr FN`
-            raw_byte_count: show count as bytes (default True)
-                            False - formats the size in KB and MB
-            verbose: show verbose output
-        """
-        # lsl = getoutput_from_run(['ls', '-ltr', adjusted], None,
-        #                          show_result=False, show_output=False, show_error=False)['stdout']
-        # print(f"  {msum.parse_lsl(lsl, raw_byte_count=True, verbose=msum.parsed.verbose)}")
-        if verbose > 1:
-            print(f"Input lsl=[{lsl_str}]")
-        parts = lsl_str.split(" ")
-        num: int = len(parts)
+    Args:
+        lsl_str: String output from `ls -ltr FN`
+        raw_byte_count: show count as bytes (default True)
+                        False - formats the size in KB and MB
+        verbose: show verbose output
+    """
+    # lsl = getoutput_from_run(['ls', '-ltr', adjusted], None,
+    #                          show_result=False, show_output=False, show_error=False)['stdout']
+    # print(f"  {msum.parse_lsl(lsl, raw_byte_count=True, verbose=msum.parsed.verbose)}")
+    if verbose > 1:
+        print(f"Input lsl=[{lsl_str}]")
+    parts = lsl_str.split(" ")
+    num: int = len(parts)
 
-        if num <= 0:
-            return ""
+    if num <= 0:
+        return ""
 
-        if raw_byte_count:
-            parsed = " ".join(parts[4:])
-        else:
-            sz = format_bytes(parts[4]) + " "
-            parsed = sz + " ".join(parts[5:])
+    if raw_byte_count:
+        parsed = " ".join(parts[4:])
+    else:
+        sz = format_bytes(parts[4]) + " "
+        parsed = sz + " ".join(parts[5:])
 
-        if verbose >= 1:
-            print(f" num={num}, parsed={parsed}")
-        return parsed
+    if verbose >= 1:
+        print(f" num={num}, parsed={parsed}")
+    return parsed
 #### FIND A BETTER HOME ####
