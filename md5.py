@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import mmap
+import os 
 import psutil
 import sys
 import typer
@@ -50,19 +51,18 @@ class Md5:
         backup: bool=True
         force: bool=False
         verbosity: int=0
-        full_path: bool=False
         lsltr: bool=False
         sum_only: bool=False
         format_size: bool=False
         short_sep: str=""
 
         def dump_config(self, message:str="", dirs_also:bool=False) -> str:
-            dirs_str = f"\ndirs={self.directories}" if dirs_also else ""
+            dirs_str = f"{os.linesep}  dirs={self.directories}" if dirs_also else ""
             msg_str = f"{message}-" if len(message or "") > 0 else ""
             return (f"{msg_str}DUMP: backup={self.backup}, force={self.force}, verbosity={self.verbosity}," +
-                    f"full_path={self.full_path}, lsltr={self.lsltr}, short={self.sum_only}, " +
-                    f"format_size={self.format_size}, short_sep={self.short_sep}" +
-                    f"{dirs_str}")
+                    f" lsltr={self.lsltr}, short={self.sum_only}," +
+                    f" format_size={self.format_size}, short_sep={self.short_sep}" +
+                    f" {dirs_str}")
 
     def __init__(self):
         self.BLOCK_SZ = 2*8_192
@@ -115,13 +115,13 @@ class Md5:
             ctx: typer.Context,
             dirs: Annotated[List[str], typer.Option("-d", "--dir", help="List of directories")]=None,
             force: Annotated[bool, typer.Option("-f", "--force", help="Force rewrite even if the output file exists already")]=False,
-            #posix: Annotated[bool, typer.Option("-p", "-fp", "--full_path", help="Use absolute posix paths")]=False,
             lsltr: Annotated[bool, typer.Option("-l", "-lsltr", "--lsltr",
                                                 help="Show file size and modification dates")]=False,
             sum_only: Annotated[bool, typer.Option("-s", "-short", "--short", help="Short, only sum is printed")]=False,
             format_size: Annotated[bool, typer.Option("-fs", "--format_size", help="Format size into kB, etc.",)]=False,
             after_sep: Annotated[str, typer.Option("-a", "--after", help="ONLY when short is enabled, use this separator."
-                                                                         "In order to minimize addtional 'echo -n ' in scripts")]="",
+                                                                         " In order to minimize addtional 'echo -n ' in scripts"
+                                                                         " special understanding for=[CRLF,LF,lsep]")]="",
 
             verbosity: Annotated[int, typer.Option("-v", count=True,
                                                        help="Set verbosity level. Use -v for warning, -vv for info, -vvv for debug.")] = 0,
@@ -130,11 +130,11 @@ class Md5:
     ):
         """
         Generate md5 sums for files and folders
-	as specified via flags!
+        as specified via flags!
 
-	Potential bugs WIP
-	- Always generates absolute file names
-	- format_size does not work in the base code
+        Potential bugs WIP
+        - Always generates absolute file names
+        - format_size does not work in the base code
         """
         if vlevel>0:
             verbosity=vlevel
@@ -143,11 +143,10 @@ class Md5:
         cfg: Md5.MdConfig = Md5.MdConfig(force=force, verbosity=verbosity)
         if dirs:
             cfg.directories=dirs
-        #cfg.full_path = posix
         cfg.lsltr = lsltr
         cfg.sum_only = sum_only
         cfg.format_size = format_size
-        cfg.short_sep=after_sep
+        cfg.short_sep=os.linesep if after_sep.upper() in [ 'LF', 'CRLF', 'LSEP' ] else after_sep
 
         # supply config into context, if there are other commands!
         ctx.obj = cfg
@@ -163,17 +162,17 @@ class Md5:
 
     def biz_logic(self, cfg: Md5.MdConfig, args:list[str]):
         self.begin_work(cfg.directories, cfg.verbosity)
-        files: list[str]
+        files: list[str] =[]
         if cfg.directories:
             files = self.build_files_list(cfg.directories, verbosity=cfg.verbosity)
-        else:
-            files = args
+        if args:
+            files.extend(args)
 
         if cfg.verbosity>5:
-            print(f"v={cfg.verbosity} files[{files}].{len(files)}")
+            print(f"{' '*cfg.verbosity} files[{files}].{len(files)}, cfg={cfg.dump_config("biz-logic", dirs_also=True)}")
         for fname in files:
             if cfg.verbosity>4:
-                print(f"v={cfg.verbosity} file=[{fname}]")
+                print(f"{' '*cfg.verbosity} file=[{fname}]")
             adj_path = adjust_winpath(fname, verbose=cfg.verbosity > 0)
             adjusted = str(adj_path or "")
 
@@ -200,10 +199,7 @@ class Md5:
             answer=f"{answer}  {format_ls_name(adj_path, use_absolute=not cfg.format_size)}"
             return answer
 
-        if cfg.full_path:
-            answer=f"{answer} {adj_path.absolute().as_posix()}"
-        else:
-            answer=f"{answer} {adj_path}"
+        answer=f"{answer} {adj_path}"
 
         return answer
     
@@ -212,10 +208,12 @@ class Md5:
         return Path(file_name).absolute().as_posix() if full_path else file_name
 
     def build_files_list(self, dirs: list[str], verbosity=0) -> list[str]:
-        if not dirs:
+        if len(dirs or [])==0:
             return []
 
         self.lst_timer.start()
+        if verbosity>1:
+            print(f"bld-files-lst: dirs={dirs}.{len(dirs)}")
         exc_dirs: list[str] = [*Lister.EXCLUDED_DIRS, "shp", "vimtmp",
                                "cygwin", "cygwin64", "Raj Debbad", "Ravi and Megan Weddings",]
         if verbosity > 2:
@@ -230,8 +228,12 @@ class Md5:
 
         files: list[str] = []
         for dd in dirs:
-            files.extend(Lister.deep_search_strs(dd, exclude_dirs=exc_dirs, exclude_exts=exc_fils
+            try:
+                files.extend(Lister.deep_search_strs(dd, exclude_dirs=exc_dirs, exclude_exts=exc_fils
                                                  , verbose=verbosity, posix_path=True))
+            except (OSError, FileNotFoundError, BaseException) as e:
+                print(f" ignoring dir={dd}, e={e}")
+            
         self.lst_timer.stop()
         return files
 
