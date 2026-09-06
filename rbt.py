@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # coding: utf-8
+
 import sys
 import traceback
 from argparse import ArgumentParser
 
 import send2trash
 
+from basern.file_info import format_ls_name
 from basern.getmtag import GetMtag
-from basern.rnutils import is_exists, getoutput_from_run, format_bytes
+from basern.rnutils import is_exists
 from basern.yesno import bool_yesno
 from ghsv import dbgln
 from md5 import Md5
@@ -37,8 +39,8 @@ class Rbt:
     def do_list(fn: str, verbosity: int = 0):
       cmd = f"ls -ltr \"{fn}\" "
       dbgln(f"Executing [{cmd}]", 2, verbosity)
-      lsl = getoutput_from_run(cmd, logf=None, show_result=False, show_output=False)
-      parsed = Md5.parse_lsl(lsl['stdout'], raw_byte_count=False, verbose=verbosity)
+      #lsl = getoutput_from_run(cmd, logf=None, show_result=False, show_output=False)
+      #parsed = parse_lsl(lsl['stdout'], raw_byte_count=False, verbose=verbosity)
       # if verbosity >= 2:
       #     print(f" parsed=[{parsed}]")
       # numb = parsed.split(' ')[0]
@@ -46,7 +48,7 @@ class Rbt:
       # parsed = sz + " ".join(parsed.split(' ')[1:])
 
       msum = Md5().process_inline(fn, verbosity)
-      print(f"{msum}  {parsed}")
+      print(f"{msum}  {format_ls_name(fn, use_absolute=False)}")
 
     def __init__(self):
       self.mtag = GetMtag().to_string()

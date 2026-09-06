@@ -63,7 +63,7 @@ class TaxCalculator:
                                              help="Net business/freelance income"),
             rental_str: str = typer.Option("0", "--rental", "-rntl",
                                            help="Net rental income after expenses"),
-            retirement_str: str = typer.Option("0", "--retirement", "-retr",
+            retirement_str: str = typer.Option("0", "--retirement", "-retr", "--retire-dist", "-dist",
                                                help="Traditional IRA / 401(k) withdrawals"),
             ltcg_str: str = typer.Option("0", "--ltcg", "-lt",
                                          help="Long-Term Capital Gains"),
@@ -96,6 +96,12 @@ class TaxCalculator:
             long_term_cg = parse_numeric_string(ltcg_str)
             pretax_contributions = parse_numeric_string(pretax_str)
             qualified_dividends = parse_numeric_string(qualdv_str)
+
+            if verbosity>0:
+                print(f" salary={salary}, bonus={bonus}, ordinary_interest={ordinary_interest},"
+                      f" short_term_cg={short_term_cg}, business_net={business_net}, rental_net={rental_net},"
+                      f" retirement_dist={retirement_dist}, long_term_cg={long_term_cg},"
+                      f" pretax_contribs={pretax_contributions}, qualified_dividends={qualified_dividends}")
         except ValueError as e:
             typer.secho(f"\n❌ Error parsing inputs: {e}", fg=typer.colors.RED, bold=True)
             raise typer.Exit(code=1)
@@ -105,6 +111,11 @@ class TaxCalculator:
                 salary + bonus + ordinary_interest + short_term_cg +
                 business_net + rental_net + retirement_dist
         )
+
+        # if ordinary_income <= 0:
+        #     if verbosity>=1:
+        #         print(f" ordinary_income = {ordinary_income}, stopping")
+        #     return
 
         # 2. Adjusted Gross Income (AGI)
         federal_agi = (ordinary_income + long_term_cg+qualified_dividends) - pretax_contributions
@@ -131,7 +142,7 @@ class TaxCalculator:
         if verbosity>=1:
             typer.echo(f"Long-Term Capital Gains:      ${long_term_cg + qualified_dividends:,.2f}")
             typer.echo(f"Pre-Tax Deductions:           -${pretax_contributions:,.2f}")
-        typer.echo(f"Fed Marginal rate and limit:  {fed_marginal_rate:,.2f}% and {fed_marginal_limit:,.2f}")
+        typer.echo(f"Fed Marginal rate and limit:  {fed_marginal_rate:,.2f}% and ${fed_marginal_limit:,.0f}")
         typer.echo(f"Federal AGI:                  ${federal_agi:,.2f}")
 
         if verbosity>1:
@@ -143,29 +154,33 @@ class TaxCalculator:
         typer.echo(f"Estimated Ordinary Tax:      ${fed_ordinary_tax:,.2f}")
         if verbosity>=2:
             typer.echo(f"Estimated LTCG Tax:          ${fed_ltcg_tax:,.2f}")
+        fed_tax_rate = 0.0 if ordinary_income<=0 or fed_taxable_ordinary <= 0 \
+            else (total_fed_tax*100.0)/(fed_taxable_ordinary+fed_taxable_ltcg)
         typer.secho(f"Total Estimated Federal Tax: ${total_fed_tax:,.2f}"
-                    f" ({(total_fed_tax*100.0)/(fed_taxable_ordinary+fed_taxable_ltcg):,.2f}%)"
+                    f" ({fed_tax_rate:,.2f}%)"
                     f" marginal={fed_marginal_rate:,.2f}%"
                     # CA taxable includes, income+ltcg+qual
-                    f", rem={max(0.0, fed_marginal_limit-ca_taxable)}", bold=True)
+                    f", remaining-bracket=${max(0.0, fed_marginal_limit - ca_taxable):,.0f}", bold=True)
 
         if verbosity>1:
             typer.secho("\n")
         typer.secho("========== CALIFORNIA STATE TAX ==========", fg=typer.colors.YELLOW, bold=True)
         typer.echo(f"California Taxable Income:   ${ca_taxable:,.2f} (Includes LTCG)")
-        typer.echo(f"CA Marginal rate and limit:  {ca_marginal_rate:,.2f}% and {ca_marginal_limit:,.2f}")
+        typer.echo(f"CA Marginal rate and limit:  {ca_marginal_rate:,.2f}% and ${ca_marginal_limit:,.0f}")
         if verbosity>=1:
             typer.echo(f"CA Base Progressive Tax:     ${ca_base_tax:,.2f}")
             typer.echo(f"CA Mental Health Surtax:     ${ca_surtax:,.2f}")
+        ca_tax_rate = 0.0 if ordinary_income <= 0 else (total_ca_tax*100.0)/ca_taxable
         typer.secho(f"Total Estimated CA Tax:      ${total_ca_tax:,.2f}"
-                    f" ({(total_ca_tax*100.0)/ca_taxable:,.2f}%)"
+                    f" ({ca_tax_rate:,.2f}%)"
                     f" marginal={ca_marginal_rate:,.2f}%"
-                    f", rem={max(0.0, ca_marginal_limit - ca_taxable)}", bold=True)
+                    f", remaining-bracket=${max(0.0, ca_marginal_limit - ca_taxable):,.0f}", bold=True)
 
         if verbosity>1:
             typer.secho("\n")
 
-        combined_rate:float = (total_fed_tax+total_ca_tax)/max((fed_taxable_ltcg+fed_taxable_ordinary), ca_taxable)
+        combined_rate:float = 0.0 if ordinary_income<=0 \
+            else (total_fed_tax+total_ca_tax)/max((fed_taxable_ltcg+fed_taxable_ordinary), ca_taxable)
         roth_str=""
         if retirement_dist > 0:
             roth_str=f" roth=${(retirement_dist*(1-combined_rate)):,.0f}"
