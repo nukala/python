@@ -29,7 +29,8 @@ from typing import Annotated, Final
 #
 
 # remove the completion related help text
-cli = typer.Typer(add_completion=False,
+cli = typer.Typer(help="Hide and close laptop - append battery percentages into a file",
+                  add_completion=False,
                   context_settings={"help_option_names": ["-h", "--help", "-?",],
                                     "allow_extra_args": True,
                                     "ignore_unknown_options": True, })
@@ -85,7 +86,8 @@ class HideLock:
     def show(ctx: typer.Context,
         opened: Annotated[bool, typer.Option("-o", "--opened",
             help="Laptop opened, indicate so in the log. default=off.")]=False,
-        keep: Annotated[bool, typer.Option(help="Do not delete the log file on next day, just keep appending.")]=False,
+	    keep: Annotated[bool,
+	             typer.Option(help="Do not delete the log file on next day, just keep appending.")]=False,
         
         # help: Annotated[bool, typer.Option("-h", help="show this help text")]=False,
             ) -> None:
@@ -97,12 +99,14 @@ class HideLock:
             opened:  to show that laptop was opened when the percentages were generated [WIP]
             keep:  do not delete the log file of prior day
         [/b]
+	Keep from main command might override this setting
         """
         cfg: HideLock.HlConfig=ctx.obj
         if cfg.verbosity >= 3:
-            print(f"in show ctx={ctx}")
+            cfg.dump_config(f"in show ctx={ctx}")
 
-        cfg.keep = keep
+        if not cfg.keep:
+            cfg.keep = keep
         cfg.opened = opened
 
         # gather percentage and write to file
@@ -261,7 +265,7 @@ class HideLock:
 
         ctx.obj = cfg
         if ctx.invoked_subcommand is None:
-            msg="No command provided, defaualt action=show " if cfg.verbosity > 2 else ""
+            msg="No command provided, default action=show " if cfg.verbosity > 2 else ""
             if cfg.verbosity >= 3:
                 cfg.dump_config(f"{msg}")
                 print(f"before default show ctx=[{ctx}]")
