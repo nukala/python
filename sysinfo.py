@@ -1,6 +1,14 @@
 ##
 ## https://thepythoncode.com/code/get-hardware-system-information-python
 ##
+
+########################################################################
+# WIP:
+#   options for each --disk, --cpu, --memory, --io, --network --gpu, --all
+#   use typer
+#   use bit shift binaries
+########################################################################
+
 import psutil
 import platform
 import sys

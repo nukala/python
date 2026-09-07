@@ -1,0 +1,14 @@
+{
+    "SOXX": {
+        "url": "https://www.blackrock.com/us/individual/products/239705/ishares-semiconductor-etf/1464253357507.ajax?fileType=csv&fileName=SOXX_holdings&dataType=fund",
+        "format": "ishares"
+    },
+    "SMH": {
+        "url": "https://www.vaneck.com/us/en/investments/semiconductor-etf-smh/holdings-download.csv",
+        "format": "vaneck"
+    },
+    "EWY": {
+        "url": "https://www.blackrock.com/us/individual/products/239681/ishares-msci-south-korea-capped-etf/1464253357507.ajax?fileType=csv&fileName=EWY_holdings&dataType=fund",
+        "format": "ishares"
+    }
+}

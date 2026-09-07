@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from basern.yesno import bool_yesno
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import IO, Final
+from basern.getmtag import is_windows
 
 import inspect
 import os
@@ -278,7 +279,7 @@ def getoutput_from_run(cmd, logf, show_cmd=False, show_result=True, show_output=
     excpt = None
     elapsed = 0
     try:
-        if show_cmd == True:
+        if show_cmd:
             write_log(logf, f"About to start {cmd}")
         # TODO: cat no_exist does not goto out nor err
         # TODO: no special env or other-optional params
@@ -375,7 +376,7 @@ def ask_then_run(cmd, logf, inpt=None, special_env=None, show_result=True, show_
 
     return stat
 
-def open_resolved(path: Path | str, mode: str = "rb", encoding: str = None, verbose: int = 0) -> IO:
+def open_resolved(path: Path | str, mode: str = "rb", encoding: str = None, verbose: int = 0) -> IO|None:
   """
   Open a file, resolving Cygwin WSL-format symlinks on Windows/Cygwin
   before opening. On all other platforms, opens directly.
@@ -384,7 +385,7 @@ def open_resolved(path: Path | str, mode: str = "rb", encoding: str = None, verb
       path:     The path to open, as a Path or str.
       mode:     File mode, e.g. "rb", "r", "w". Defaults to "rb".
       encoding: Encoding for text modes. Ignored for binary modes.
-      verbose: Verbosity level.
+      verbose:  Verbosity level.
 
   Returns:
       An open file object (binary or text depending on mode).
@@ -401,19 +402,17 @@ def open_resolved(path: Path | str, mode: str = "rb", encoding: str = None, verb
           text = f.read()
   """
 
-  resolved: Path = (
-    adjust_winpath(str(path), verbose)
-    if sys.platform in ("win32", "cygwin")
-    else Path(path)
-  )
+  adj_path = adjust_winpath(str(path), verbose = verbose)
+  if adj_path is None:
+      return None
 
-  if verbose >= 3:
-      print(f"Opening {resolved}")
-
-  return open(resolved, mode=mode, encoding=encoding)
+  try:
+      return open(adj_path, mode=mode, encoding=encoding)
+  except PermissionError as pe:
+      return None
 
 
-def adjust_winpath(file_name:str, verbose:int = 0) -> Path:
+def adjust_winpath(file_name:str, verbose:int = 0) -> Path|None:
     """
     Adjusts file_name into WINDOwS friendly version.
     Seems like `ln -s ` only WORKS when using `CYGWIN=winsymlinks:nativestrict ln -s FROM TO`
@@ -439,7 +438,7 @@ def adjust_winpath(file_name:str, verbose:int = 0) -> Path:
                 print(f"[{file_name}] replacing={key} with={repl}")
             file_name = file_name.replace(key, repl)
 
-    if verbose >= 1:
+    if verbose >= 2:
         print(f"[{adjusted}] after replacements=[{file_name}]")
 
     # fn = file_name
@@ -458,14 +457,9 @@ def adjust_winpath(file_name:str, verbose:int = 0) -> Path:
     #     if verbose > 1:
     #         print(f" realpath={fn}, for file={file_name}\n")
 
-    replaced_path = resolve_with_cygpath(file_name, verbose)
+    return resolve_with_cygpath(file_name, verbose)
 
-    # if not os.path.exists(replaced_path):
-    #   raise FileNotFoundError(f"No such file \"{replaced_path}\" \n")
-
-    return replaced_path
-
-def resolve_with_cygpath(path: Path | str, verbose:int = 0) -> Path:
+def resolve_with_cygpath(path: Path | str, verbose:int = 0) -> Path | None:
     """
     Resolve a path that may contain Cygwin WSL-format symlinks.
 
@@ -475,6 +469,7 @@ def resolve_with_cygpath(path: Path | str, verbose:int = 0) -> Path:
 
     Args:
         path: The path to resolve, as a Path or str.
+        verbose: controls debugs
 
     Returns:
         A resolved absolute Path.
@@ -489,22 +484,35 @@ def resolve_with_cygpath(path: Path | str, verbose:int = 0) -> Path:
     try:
         os.stat(p)
         return p
-    except OSError as e:
-        if e.winerror != 1920:
-            raise
-
+    except (OSError, FileNotFoundError) as e:
         if verbose >= 2:
-            print(f"[{path}] failed to stat, e=[{e}], executing cygpath\n")
-        raw: str = subprocess.check_output(
-            ["cygpath", "-aw", p.as_posix()],
-            stderr=subprocess.DEVNULL,
-            text=True,                   # decode stdout automatically
-        ).strip()
+            print(f"[{path}] failed to stat, e=[{str(e)}], executing cygpath\n")
 
+        if is_windows():
+            return handle_windows_failure(p, verbose)
+
+
+def handle_windows_failure(p: Path, verbose: int = 0):
+    raw: str = subprocess.check_output(
+        ["cygpath", "-aw", "--", p.as_posix()],
+        stderr=subprocess.DEVNULL,
+        text=True,  # decode stdout automatically
+    ).strip()
+
+    if verbose > 3:
+        print(f"handle_windows_failure: p=[{p}], raw=[{raw}]")
+    if raw == str(p):
+        if verbose > 3:
+            print(f"handle_windows_failure: cygpath output is same as input, nothing resolved")
+        return None
+    else:
         resolved: Path = Path(raw)
-        os.stat(resolved)                # validate — raises OSError if still broken
-        return resolved
-
+        try:
+            os.stat(resolved)  # validate — raises OSError if still broken
+            return resolved
+        except (OSError, FileNotFoundError) as ee:
+            if verbose > 3:
+                print(f"{verbose}[{p}] failed to stat after cygpath e=[{ee}]\n")
 
 def get_pwd(use_tilda:bool = True):
     """
@@ -711,7 +719,46 @@ def is_file_older_than_today(filename: str | Path, verbosity: int=0) -> bool:
 
 def clear_screen() -> None:
     """ 
-    Cross platform, easy way, to clear screen without subprocess etc.
+    Cross-platform, easy way, to clear screen without subprocess etc.
     """
     print("\033c", end="")
 
+
+#### FIND A BETTER HOME ####
+def parse_lsl(lsl_str: str, raw_byte_count = True, verbose: int = 0):
+    """
+    Parses ls -ltr output, removes permissions and owner-group details.
+    Shows only size and modification dates. Filename too
+
+    So:
+      -rwxr-xr-x 1 ravi None 1690 Nov 10 14:13 FILE_NAME
+    becomes
+      1690 Nov 10 14:13 FILE_NAME
+
+    Args:
+        lsl_str: String output from `ls -ltr FN`
+        raw_byte_count: show count as bytes (default True)
+                        False - formats the size in KB and MB
+        verbose: show verbose output
+    """
+    # lsl = getoutput_from_run(['ls', '-ltr', adjusted], None,
+    #                          show_result=False, show_output=False, show_error=False)['stdout']
+    # print(f"  {msum.parse_lsl(lsl, raw_byte_count=True, verbose=msum.parsed.verbose)}")
+    if verbose > 1:
+        print(f"Input lsl=[{lsl_str}]")
+    parts = lsl_str.split(" ")
+    num: int = len(parts)
+
+    if num <= 0:
+        return ""
+
+    if raw_byte_count:
+        parsed = " ".join(parts[4:])
+    else:
+        sz = format_bytes(parts[4]) + " "
+        parsed = sz + " ".join(parts[5:])
+
+    if verbose >= 1:
+        print(f" num={num}, parsed={parsed}")
+    return parsed
+#### FIND A BETTER HOME ####

@@ -16,10 +16,11 @@ mkreq:
 	#${PIP} freeze --verbose --all >> requirements.txt
 	@echo " NOTE-PRE-COMMIT> Remove pip/pywin32 not-cross-platform deps manually"
 
+tst: tests
 test: tests
-
 tests::
-	${PYTHON} -m unittest tests/test_*.py
+#${PYTHON} -m unittest tests/test_*.py
+	${PYTHON} -m unittest $(fd -tf -epy test_ tests)
 
 ## pip25 requires local installation?
 venv: requirements.txt
@@ -42,9 +43,10 @@ clean:
 	@echo ""
 
 # to add a new "requirement" 
-#  ${PIP} install --dry-run pyclip
+#  ${PIP} install --verbose --dry-run pyclip
 #  ${PIP} install --verbose pyclip
-#  ${PIP} install -r requirements.txt --upgrade --verbose
-#  ${PYTHON} -m pip install --upgrade pip --verbose
-#  ${PIP} install --ignore-installed --local --verbose --dry-run pyclip
-#  ${PIP} install --break-system-packages --verbose --dry-run pandas
+#  ${PIP} install --verbose -r requirements.txt --upgrade 
+#  ${PYTHON} -m pip install --verbose --upgrade pip 
+#  ${PIP} install --verbose --ignore-installed --local --dry-run pyclip
+#  ${PIP} install --verbose --break-system-packages --verbose --dry-run pandas
+#  ${PIP} -m pip install --verbose --force-reinstall pillow
