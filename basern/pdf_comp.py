@@ -139,6 +139,10 @@ class PageNumberParser:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) <= 1:
+        print(f"Requires an file_name argument")
+        sys.exit(1)
+
     fn = sys.argv[1]
     p = PageNumberParser()
     p.verbose = 4

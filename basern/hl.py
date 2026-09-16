@@ -7,7 +7,7 @@ import shutil
 import sys
 import typer
 
-from basern.rnutils import clear_screen, delete_if_older_than_today
+from rnutils import ( clear_screen, delete_if_older_than_today )
 from dataclasses import dataclass
 from datetime import datetime, date
 from enum import Enum
@@ -27,6 +27,13 @@ from typing import Annotated, Final
 #  shows nothing if plugged in
 #  hl = hide+lock -> close the lid
 #
+
+# /// script
+# dependencies = [
+#    "psutil",
+#    "typer",
+# ]
+# ///
 
 # remove the completion related help text
 cli = typer.Typer(help="Hide and close laptop - append battery percentages into a file",

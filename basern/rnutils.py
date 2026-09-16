@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from basern.yesno import bool_yesno
+from yesno import bool_yesno
 from datetime import datetime
 from pathlib import Path
 from typing import IO, Final
-from basern.getmtag import is_windows
+from getmtag import is_windows
 
 import inspect
 import os
