@@ -14,6 +14,14 @@ from basern.yesno import bool_yesno
 from ghsv import dbgln
 from md5 import Md5
 
+# /// script
+# dependencies = [
+#    "psutil",
+#    "send2trash",
+#    "typer",
+# ]
+# ///
+
 
 #######################################################
 # Remove files by sending to "RecycleBin" or "Trash", hence the acronym
@@ -38,7 +46,7 @@ class Rbt:
     @staticmethod
     def do_list(fn: str, verbosity: int = 0):
       cmd = f"ls -ltr \"{fn}\" "
-      dbgln(f"Executing [{cmd}]", 2, verbosity)
+      #dbgln(f"Executing [{cmd}]", 2, verbosity)
       #lsl = getoutput_from_run(cmd, logf=None, show_result=False, show_output=False)
       #parsed = parse_lsl(lsl['stdout'], raw_byte_count=False, verbose=verbosity)
       # if verbosity >= 2:

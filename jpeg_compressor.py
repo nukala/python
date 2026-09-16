@@ -18,6 +18,14 @@ import traceback
 from skimage.metrics import structural_similarity as ssim
 
 
+# /// script
+# dependencies = [
+#    "numpy",
+#    "scikit-image",
+#    "opencv-python",
+# ]
+# ///
+
 def get_non_conflicting_output_path(input_path: Path, output_dir: Path) -> Path:
     """
     Generate a non-conflicting output path for the compressed image.

@@ -3,6 +3,12 @@ import re
 from typing import Annotated
 
 
+# /// script
+# dependencies = [
+#    "typer",
+# ]
+# ///
+
 app = typer.Typer(help="2026 MFJ Federal & California Tax Estimator",
                   add_completion=False, rich_markup_mode="markdown",
                   context_settings={"help_option_names": ["-h", "--help", "-?"],
@@ -73,7 +79,7 @@ class TaxCalculator:
                                            help="Pre-tax traditional 401k/IRA/HSA contributions"),
 
             verbosity: Annotated[int, typer.Option("-v", count=True,
-                                                   help="Set verbosity level. Use -v for warning, -vv for info, -vvv for debug.")] = 0,
+                                                   help="Set verbosity level. Allows -vvv for more verbosity")] = 0,
             vlevel: Annotated[int, typer.Option("--verbosity", "-vrb",
                                                 help="Specify a verbosity level, 1=warning, 2=info,3=debug etc.")] = 0,
     ):

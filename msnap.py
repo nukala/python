@@ -59,7 +59,7 @@ class MsNap:
         dbgln(msg, 2, self.verbose)
 
     def parse_args(self, args):
-        parser = ArgumentParser(prog="frs",
+        parser = ArgumentParser(prog="msnap",
                                 description="To nap a few milliseconds")
         parser.add_argument('-v', action='count', default=0, dest="verbose",
                             help="Enable verbosity (more logging with -vv etc.)")

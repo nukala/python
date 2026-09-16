@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 # coding: utf-8
+
+# /// script
+# dependencies = [
+#    "psutil",
+#    "typer",
+# ]
+# ///
+
 ###############################################################################
 # WIP - due to mmap
 #     - yucky way in which files are passed.
