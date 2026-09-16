@@ -1,0 +1,25 @@
+version = 1
+revision = 3
+requires-python = ">=3.14"
+
+[manifest]
+members = [
+    "basern",
+    "rnpydev",
+]
+
+[[package]]
+name = "basern"
+version = "0.1.0"
+source = { editable = "basern" }
+
+[[package]]
+name = "rnpydev"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "basern" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "basern", editable = "basern" }]
