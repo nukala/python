@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-from basern.getmtag import GetMtag
-from basern.rnutils import *
-from basern.yesno import bool_yesno
-from basern.yesno import yes_no
+from getmtag import GetMtag
+from rnutils import *
+from yesno import bool_yesno
+from yesno import yes_no
 
 import argparse
 import datetime
-import getopt
+# import getopt
 import gtclnr
 import mtime
 import os
@@ -16,6 +16,18 @@ import subprocess
 import sys
 import time
 
+# /// script
+# dependencies = [
+#    "pyclip",
+#    "pywin32; sys_platform == 'win32'"
+# ]
+# ///
+
+
+### UGLY UGLY HACK Y$@K
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from smsrch import copy_to_clipboard
+### UGLY UGLY HACK Y$@K
 
 def get_tmp_dir(subdir = None):
   home_dir = os.environ['HOME'] + os.sep + 'tmp'
@@ -178,7 +190,6 @@ def main(args):
   elif yes_no(f'remove {logf.name} (y/n): ') == 0:
     os.remove(logf.name)
   else:
-    from smsrch import copy_to_clipboard
     copy_to_clipboard(logf.name, debug=(args.verbose>1))
 
   if args.verbose > 0:
@@ -201,3 +212,4 @@ prog = get_prog(__file__)
 if __name__ == "__main__":
   ret = main(sys.argv)
   sys.exit(ret)
+

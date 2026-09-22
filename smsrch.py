@@ -18,6 +18,13 @@ import uuid
 #  choose betweem sm and nr
 ############################################################################
 
+# /// script
+# dependencies = [
+#    "pyclip",
+#    "pywin32; sys_platform == 'win32'"
+# ]
+# ///
+
 @staticmethod
 def copy_to_clipboard(some_string, debug=False, verbose=False):
   """

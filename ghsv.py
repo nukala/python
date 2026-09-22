@@ -7,6 +7,13 @@ from pathlib import Path
 from types import NoneType
 from typing import List, Literal, Optional
 
+# /// script
+# dependencies = [
+#    "psutil",
+#    "typing",
+# ]
+# ///
+
 
 class BackupUtils:
     @staticmethod

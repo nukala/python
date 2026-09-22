@@ -2,6 +2,13 @@ from typing import List, Tuple, Dict
 from tabulate import tabulate
 import numpy as np
 
+# /// script
+# dependencies = [
+#    "tabulate",
+#    "numpy",
+# ]
+# ///
+
 
 class ForeignInvestmentCalculator:
     def __init__(self, initial_usd: float, base_rate: float):
