@@ -5,6 +5,12 @@ from rnutils import *
 from gtpull import *
 from argparse import ArgumentParser
 
+# /// script
+# dependencies = [
+#    "typer",
+# ]
+# ///
+
 class gtclnr:
   logf = None
   def __init__(self, logf = None):
