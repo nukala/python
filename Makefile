@@ -50,3 +50,4 @@ clean:
 #  ${PIP} install --verbose --ignore-installed --local --dry-run pyclip
 #  ${PIP} install --verbose --break-system-packages --verbose --dry-run pandas
 #  ${PIP} -m pip install --verbose --force-reinstall pillow
+# uv run pytest FILE_OR_ALL

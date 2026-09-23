@@ -6,6 +6,16 @@ from datetime import datetime
 from PIL import Image
 from resize_image import parse_size, generate_output_filename, calculate_quality_metrics, resize_and_compress_image
 
+# /// script
+# dependencies = [
+#    "pillow",
+#    "pytest",
+#    "opencv-python",
+# ]
+# ///
+
+# uv run pytest FILE_OR_ALL
+
 @pytest.fixture
 def temp_image(tmp_path):
     """Create a temporary JPEG image for testing."""
