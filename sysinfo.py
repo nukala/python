@@ -9,10 +9,22 @@
 #   use bit shift binaries
 ########################################################################
 
+import GPUtil
 import psutil
 import platform
 import sys
 from datetime import datetime
+from tabulate import tabulate
+
+#    "distutils",
+
+# /// script
+# dependencies = [
+#    "psutil",
+#    "GPUtil",
+#    "tabulate",
+# ]
+# ///
 
 def get_size(bytes, suffix="B"):
     """
@@ -121,8 +133,6 @@ print(f"Total Bytes Received: {get_size(net_io.bytes_recv)}")
 
 
 # GPU information
-import GPUtil
-from tabulate import tabulate
 print("="*40, "GPU Details", "="*40)
 gpus = GPUtil.getGPUs()
 list_gpus = []
