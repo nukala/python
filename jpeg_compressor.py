@@ -18,6 +18,23 @@ import traceback
 from skimage.metrics import structural_similarity as ssim
 
 
+##############################################################################
+# GROK:
+# Given PIL, cv2 libraries ONLY, new libraries requires justification
+# please write some python code to resize a jpeg image.
+# Code should use typed parameters, write as a reusable function.
+# It should take width and height as parameters. Must use argparse. Use functions if code gets larger than 20 lines. Add basic documentation. Parameters should be in --width, -w style.  Do not use any new libraries except cv2 and PIL. Add parameter for specifying the max file size, compress if required. max-size code to accomodate 2k or 4m and such. to represent 2 kilo bytes and 4 megabytes allow for upper and lower case multiples.
+# Write output file with the a timestamp of 2 digit years, 3 letters lowercase name in english + 2 padded digits for today's date.
+# add 2digit zero padded minute and seconds to filename upon conflict.
+# add some code to compare image quality metrics.
+# add complete unit tests with pytest, we should achieve very high code-coverage
+# 
+# >> what is the justification for opencv-python usage? Can that be avoided
+# 
+#
+# uv run pytest FILE_OR_ALL
+##############################################################################
+
 # /// script
 # dependencies = [
 #    "numpy",

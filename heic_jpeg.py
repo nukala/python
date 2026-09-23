@@ -5,10 +5,23 @@ from PIL import Image
 from pillow_heif import register_heif_opener
 from ghsv import dbgln
 
+# /// script
+# dependencies = [
+#    "pillow",
+#    "pillow-heif",
+# ]
+# ///
+
 
 # https://gemini.google.com/app/f3b3d3d0e600d864
 # not much size reduction till 40% 
 # python /Users/ravi/mine/rnpydev/heic_jpg.py -p . -c . -i IMG_8260.heic -j parking-def -v; du -hs IMG_8260.heic parking*
+
+########################################################
+# WIP
+#   heic details (image count, etc)
+########################################################
+
 class HeicJpeg:
 	def __init__(self):
 		parser = argparse.ArgumentParser(description="To convert HEIC (iPhone) to JPEG format. "
