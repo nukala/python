@@ -18,15 +18,16 @@ import uuid
 #  choose betweem sm and nr
 ############################################################################
 
+#    "pywin32; sys_platform == 'win32'"
+
 # /// script
 # dependencies = [
-#    "pyclip",
-#    "pywin32; sys_platform == 'win32'"
+#    "pyperclip",
 # ]
 # ///
 
 @staticmethod
-def copy_to_clipboard(some_string, debug=False, verbose=False):
+def copy_to_clipboard22(some_string, debug=False, verbose=False):
   """
   " Copies the specified some_string into clipboard in a OS independent fashion
   """
@@ -65,5 +66,6 @@ OR dimensions() like '%{tu.with_dashes()}%'
   """
 
   print(f"{s}")
-  tu.copy_to_clipboard(s)
+  from clpbrd import copy_to_clipboard
+  copy_to_clipboard(s)
 

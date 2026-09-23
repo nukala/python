@@ -16,17 +16,18 @@ import subprocess
 import sys
 import time
 
+#    "pywin32; sys_platform == 'win32'"
+
 # /// script
 # dependencies = [
-#    "pyclip",
-#    "pywin32; sys_platform == 'win32'"
+#    "pyperclip",
 # ]
 # ///
 
 
 ### UGLY UGLY HACK Y$@K
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from smsrch import copy_to_clipboard
+from clpbrd import copy_to_clipboard
 ### UGLY UGLY HACK Y$@K
 
 def get_tmp_dir(subdir = None):
@@ -190,7 +191,7 @@ def main(args):
   elif yes_no(f'remove {logf.name} (y/n): ') == 0:
     os.remove(logf.name)
   else:
-    copy_to_clipboard(logf.name, debug=(args.verbose>1))
+    copy_to_clipboard(logf.name, verbose=args.verbose)
 
   if args.verbose > 0:
     print(f"main returning \"{ret}\".")

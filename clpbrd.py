@@ -9,6 +9,13 @@
 
 from basern.rnutils import *
 from argparse import ArgumentParser
+import pyperclip
+
+# /// script
+# dependencies = [
+#    "pyperclip",
+# ]
+# ///
 
 
 """
@@ -21,6 +28,10 @@ from argparse import ArgumentParser
 #Works in C: drive and many other folders.
 # To help test:  mkdir -p a/b/c/d/e/f/g/h/i/j/k/l/m/n/op/q/r/s/t/u/v/w/x/y/z
 
+
+@staticmethod
+def copy_to_clipboard(msg: str, verbose:int = 0) -> None:
+    pyperclip.copy(f"{msg}")    
 
 if __name__ == "__main__":
   parser = ArgumentParser(prog='smpwd', description='return a FS-separated pwd of specified elements')
