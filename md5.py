@@ -36,12 +36,12 @@ import typer
 from basern.file_info import format_ls_name
 from basern.lister import Lister
 from basern.proc_utils import ProcUtils
-from basern.rnutils import ( adjust_winpath, format_bytes, open_resolved )
+from basern.rnutils import ( adjust_winpath, open_resolved )
 from basern.stopwatch import Stopwatch
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import IO, List, Annotated, Final
+from typing import IO, List, Annotated
 
 # remove the completion related help text
 # , "ignore_unknown_options": True
@@ -74,8 +74,6 @@ class Md5:
 
     def __init__(self):
         self.BLOCK_SZ = 2*8_192
-        self.parsed = None
-        self.unknown_args = None
         self.lsl_timer = Stopwatch(precision=1)
         self.lst_timer = Stopwatch(precision=0)
         self.sum_timer = Stopwatch()
@@ -178,6 +176,7 @@ class Md5:
 
         if cfg.verbosity>5:
             print(f"{' '*cfg.verbosity} files[{files}].{len(files)}, cfg={cfg.dump_config("biz-logic", dirs_also=True)}")
+        num_done:int = 0
         for fname in files:
             if cfg.verbosity>4:
                 print(f"{' '*cfg.verbosity} file=[{fname}]")
@@ -186,9 +185,13 @@ class Md5:
 
             try:
                 the_hash = self.calculate_hash(fname, verbosity=cfg.verbosity)
+                num_done += 1
                 if not the_hash:
                     continue
-                print(f"{self.build_output(cfg, adj_path, the_hash)}", end=f"{self.build_end(cfg)}")
+                do_flsh:bool = True if num_done % 20 == 0 else False
+                #if cfg.verbosity>1 and do_flsh:
+                #    print(f" {cfg.verbosity} num_done={num_done}, do_flsh={do_flsh}")
+                print(f"{self.build_output(cfg, adj_path, the_hash)}", end=f"{self.build_end(cfg)}", flush=do_flsh)
             except (OSError, PermissionError, FileNotFoundError, WindowsError, UnicodeEncodeError) as e:
                 print(f"{adjusted}\n\n")
 
@@ -260,17 +263,17 @@ class Md5:
 
     @staticmethod
     def begin_work(dirs: list[str], verbosity: int = 0):
-        if len(dirs or []) > 1 or verbosity > 0:
+        if len(dirs or []) >= 1 or verbosity > 0:
             print(f"# [ {" ".join(sys.argv[1:])} ]  ({datetime.now().strftime('%a %b %d %H:%M:%S %Z %Y')})"
-                  f", begin nice={psutil.Process().nice()}")
+                  f", begin nice={psutil.Process().nice()}", flush=True)
 
     def end_work(self, dirs: list[str], files: list[str], verbosity: int = 0):
-        if len(dirs or []) > 1 or verbosity > 0:
+        if len(dirs or []) >= 1 or verbosity > 0:
             lsl_str = f"lsl={self.lsl_timer}, " if self.lsl_timer.elapsed_seconds else ""
             lst_str = f"list_files={self.lst_timer}, " if self.lst_timer.elapsed_seconds else ""
 
             print(f"# Total number={len(files or [])}, gen_sums={self.sum_timer}, "
-                  f"{lst_str}{lsl_str}nice={psutil.Process().nice()}")
+                  f"{lst_str}{lsl_str}nice={psutil.Process().nice()}", flush=True)
 
 ###### end of md5 class
 
