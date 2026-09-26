@@ -1,0 +1,32 @@
+# pytest is more popular!
+import pytest
+from typing import Any
+
+# Adjust the import to match your module
+#from your_module import parse_numeric_string
+
+# /// script
+# dependencies = [
+#    "pytest",
+# ]
+# ///
+
+class TestFooBar:
+
+class TestDooGoo:
+
+# # Show full output + print statements
+# uv run pytest test_parse_numeric_string.py -v -s
+
+# # Stop on first failure
+# uv run pytest test_parse_numeric_string.py -x
+
+# # Run only the valid-conversion tests
+# uv run pytest test_parse_numeric_string.py -k "valid_conversions" -v
+
+# # If you also need to install pytest first (in a uv project)
+# uv add --dev pytest
+# uv run pytest test_parse_numeric_string.py -v
+
+# # For one class
+# uv run pytest tests/test_num_utils.py::TestParseDurationMs
