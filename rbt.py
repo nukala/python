@@ -106,13 +106,17 @@ class Rbt:
       self.populate_cli_args(parsed)
       self.post_process_cli_args()
 
-    def remove(self, fn:str, verbose:int = 0):
+    def remove(self, orig_fn:str, verbose:int = 0):
       from basern.rnutils import adjust_winpath
       if verbose > 0:
-        print(f" pre-adjust=[{fn}]", end = '')
-      fn = adjust_winpath(fn)
+        print(f" pre-adjust=[{orig_fn}]", end = '')
+      fn = adjust_winpath(orig_fn)
       if verbose > 0:
         print(f", adjusted=[{fn}]")
+      if not fn:
+        print(f" file={orig_fn} adjusted equivalent not found, DOING NOTHING")
+        return 
+      
       if not is_exists(fn):
         if fn.startswith("-"):
           print(f"filename that startswith dash({arg}), not supported")
