@@ -2,10 +2,11 @@ import os
 import sys
 import time
 from argparse import ArgumentParser
+from basern.stopwatch import Stopwatch
 from typing import Tuple
 from ghsv import dbgln
 
-def sleep_with_timing(milliseconds: int) -> Tuple[float, float, float]:
+def sleep_with_timing(milliseconds: int) -> Stopwatch:
     """
     Sleeps for the given number of milliseconds and returns timing details.
 
@@ -13,16 +14,12 @@ def sleep_with_timing(milliseconds: int) -> Tuple[float, float, float]:
         milliseconds (int): The duration to sleep in milliseconds.
 
     Returns:
-        Tuple[float, float, float]: A tuple containing:
-            - start_time (float): Timestamp before sleeping.
-            - end_time (float): Timestamp after sleeping.
-            - elapsed (float): Actual elapsed time in milliseconds.
+        stopwatch object that encapsulates the napped-duration, useful if printing details 
     """
-    start_time: float = time.perf_counter()
+    timer:Stopwatch = Stopwatch(name="msnap", precision=1)
+    timer.start()
     time.sleep(milliseconds / 1000.0)
-    end_time: float = time.perf_counter()
-    elapsed: float = (end_time - start_time) * 1000.0  # convert to ms
-    return start_time, end_time, elapsed
+    return timer.stop()
 
 
 class MsNap:
@@ -78,8 +75,8 @@ class MsNap:
     def do_nap(self):
         self.dbg2(f"napping for [{self.msnap}] millis")
 
-        start, end, elapsed = sleep_with_timing(self.msnap)  # sleep 500 ms
-        self.dbg2(f"start={start:.6f}, End={end:.6f}, Elapsed={elapsed:.3f} ms")
+        sw: Stopwatch = sleep_with_timing(self.msnap)
+        self.dbg2(f"elapsed={sw}")
         if self.fb_str:
             print(f"{self.fb_str}", end=os.linesep if self.newline else '')
 
