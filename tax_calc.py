@@ -1,5 +1,6 @@
 import typer
-import re
+
+from basern.number_utils import parse_numeric_string
 from typing import Annotated
 
 
@@ -16,38 +17,6 @@ app = typer.Typer(help="2026 MFJ Federal & California Tax Estimator",
                                     "ignore_unknown_options": True, }
                   )
 
-
-# --- String Parsing Engine ---
-def parse_numeric_string(value: str) -> float:
-    """Converts shorthand strings (10k, 1.5M, $10_000) into floats."""
-    if not isinstance(value, str):
-        raise TypeError("Input must be a string")
-    if not value or not value.strip():
-        return 0.0
-
-    cleaned = re.sub(r'[$,_]', '', value).strip().lower()
-
-    suffixes = {
-        'k': 1_000.0,
-        'm': 1_000_000.0,
-        'b': 1_000_000_000.0
-    }
-
-    last_char = cleaned[-1]
-    if last_char in suffixes:
-        multiplier = suffixes[last_char]
-        number_part = cleaned[:-1].strip()
-        if not number_part:
-            raise ValueError(f"Missing numeric prefix before suffix in: '{value}'")
-        try:
-            return float(number_part) * multiplier
-        except ValueError as e:
-            raise ValueError(f"Could not parse numeric part of string: '{value}'") from e
-
-    try:
-        return float(cleaned)
-    except ValueError as e:
-        raise ValueError(f"Invalid numeric string format: '{value}'") from e
 
 
 class TaxCalculator:
@@ -92,16 +61,16 @@ class TaxCalculator:
             verbosity=vlevel
         try:
             # Convert all incoming strings to real floats
-            salary = parse_numeric_string(salary_str)
-            bonus = parse_numeric_string(bonus_str)
-            ordinary_interest = parse_numeric_string(interest_str)
-            short_term_cg = parse_numeric_string(stcg_str)
-            business_net = parse_numeric_string(business_str)
-            rental_net = parse_numeric_string(rental_str)
-            retirement_dist = parse_numeric_string(retirement_str)
-            long_term_cg = parse_numeric_string(ltcg_str)
-            pretax_contributions = parse_numeric_string(pretax_str)
-            qualified_dividends = parse_numeric_string(qualdv_str)
+            salary = parse_numeric_string(salary_str, verbosity)
+            bonus = parse_numeric_string(bonus_str, verbosity)
+            ordinary_interest = parse_numeric_string(interest_str, verbosity)
+            short_term_cg = parse_numeric_string(stcg_str, verbosity)
+            business_net = parse_numeric_string(business_str, verbosity)
+            rental_net = parse_numeric_string(rental_str, verbosity)
+            retirement_dist = parse_numeric_string(retirement_str, verbosity)
+            long_term_cg = parse_numeric_string(ltcg_str, verbosity)
+            pretax_contributions = parse_numeric_string(pretax_str, verbosity)
+            qualified_dividends = parse_numeric_string(qualdv_str, verbosity)
 
             if verbosity>0:
                 print(f" salary={salary}, bonus={bonus}, ordinary_interest={ordinary_interest},"
