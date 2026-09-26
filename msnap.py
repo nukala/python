@@ -1,10 +1,24 @@
 import os
 import sys
 import time
-from argparse import ArgumentParser
+import typer
+
+from basern.number_utils import parse_duration_ms
 from basern.stopwatch import Stopwatch
-from typing import Tuple
-from ghsv import dbgln
+from dataclasses import dataclass
+from typing import Annotated
+
+# /// script
+# dependencies = [
+#    "typer",
+# ]
+# ///
+
+app = typer.Typer(add_completion=False, rich_markup_mode="markdown", name="md5",
+                  context_settings={"help_option_names": ["-h", "--help", "-?"],
+                                    "allow_extra_args": True, 
+                                    "ignore_unknown_options": True, })
+
 
 def sleep_with_timing(milliseconds: int) -> Stopwatch:
     """
@@ -23,88 +37,82 @@ def sleep_with_timing(milliseconds: int) -> Stopwatch:
 
 
 class MsNap:
-    msnap: int = 0
-    verbose: int = 0
-    fb_str: str = None
-    newline: bool = False
+    @dataclass
+    class MsNapConfig:
+        msnap: int = 0
+        verbose: int = 0
+        fb_str: str = None
+        newline: bool = False
 
-    def __init__(self):
-        self.parser = None
-        self.unknown_args = None
+        def dump_config(self, message: str="") -> str:
+            msg_str = f"{message}-" if len(message or "") > 0 else ""
+            return (f"{msg_str}DUMP: msnap={self.msnap}, verbose={self.verbose}," +
+                    f" fb_str={self.fb_str}, newline={self.newline}")
 
-    def populate_args(self, parsed):
+
+    @app.command()
+    def entry_point(ctx: typer.Context,
+            fb_str: Annotated[str, typer.Option("-fb", "--feedback", 
+                                                help = "feedback character to echo after napping")]="",
+            newline: Annotated[bool, typer.Option("-nl", "--new_line",
+                                                  help = "terminate with a new line")]=False,
+            msnap: Annotated[str, typer.Option("-n", '-nap', '--nap', '--ms_nap', help="Millseconds to nap")]="",
+                    
+            verbosity: Annotated[int, typer.Option("-v", count=True,
+                                                       help="Set verbosity level. Use -v for warning, -vv for info, -vvv for debug.")] = 0,
+            vlevel: Annotated[int, typer.Option("--verbosity", "-vrb",
+                                                    help="Specify a verbosity level, 1=warning, 2=info,3=debug etc.")] = 0,
+                    ):
         """
-        populate class with values from parsed args
+        Nap/sleep for specified amount of time.
+        Various CLI options control additional behavior.
+
+        understands durations like 1s, 1_000ms, 1h etc
         """
-        if parsed.msnap > 0:
-            self.msnap = parsed.msnap
-        self.verbose = parsed.verbose
+        if vlevel>0:
+            verbosity=vlevel
 
-        if parsed.fb_str and len(parsed.fb_str) > 0:
-            self.fb_str = parsed.fb_str
-        self.newline = parsed.newline
+        if "lsep" in fb_str:
+            fb_str=os.linesep
 
-        if self.msnap == 0 and len(self.unknown_args) > 1:
-            self.dbg1(f"No nap time specified. Looking at unknown_args={self.unknown_args}")
-            self.msnap = int(self.unknown_args[1])
-            self.dbg1(f"nap from unknown args={self.msnap}")
 
-    def dbg1(self, msg: str):
-        dbgln(msg, 1, self.verbose)
+        nap_ms:int = 0
+        if msnap:
+            nap_ms = parse_duration_ms(msnap, verbosity)
+        used:int=0
+        if nap_ms <= 0:
+            nap_ms = int(ctx.args[used])
+            used=+1
+            if verbosity>=2:
+                print(f" {verbosity} - converted \"{ctx.args[0]}\" into nap_ms={nap_ms}, used={used}")
 
-    def dbg2(self, msg: str):
-        dbgln(msg, 2, self.verbose)
+        cfg: MsNap.MsNapConfig = MsNap.MsNapConfig(nap_ms, verbose=verbosity, fb_str=fb_str, newline=newline)
+        ctx.obj = cfg
+        
+        nap: MsNap = MsNap()
+        nap.do_nap(cfg)
+        for arg in ctx.args[used:]:
+            try:
+                cfg.msnap = parse_duration_ms(arg, cfg.verbose)
+                nap.do_nap(cfg)
+            except ValueError as err:
+                if cfg.verbose>0:
+                    print(f"err={err}")
 
-    def parse_args(self, args):
-        parser = ArgumentParser(prog="msnap",
-                                description="To nap a few milliseconds")
-        parser.add_argument('-v', action='count', default=0, dest="verbose",
-                            help="Enable verbosity (more logging with -vv etc.)")
-        parser.add_argument('--verbose', type=int, default=0, dest="verbose",
-                            help="Enable verbosity by specifying a number")
-        parser.add_argument("-fb", "--feedback", type=str, dest="fb_str",
-                            help = "feedback character to echo after napping")
-        parser.add_argument("-n", '-nap', '--nap', '--ms_nap', type=int, default=0,
-                            dest='msnap', help="Millseconds to nap")
-        parser.add_argument("-nl", "--new_line", action="store_true", dest="newline",
-                            help = "terminate with a new line")
-        self.parser = parser
-        parsed, self.unknown_args = parser.parse_known_args(args)
-        return parsed
+    def do_nap(self, cfg: MsNap.MsNapConfig):
+        if cfg.verbose>=2:
+          print(f"{cfg.verbose} - napping for [{cfg.msnap}] millis")
 
-    def do_nap(self):
-        self.dbg2(f"napping for [{self.msnap}] millis")
-
-        sw: Stopwatch = sleep_with_timing(self.msnap)
-        self.dbg2(f"elapsed={sw}")
-        if self.fb_str:
-            print(f"{self.fb_str}", end=os.linesep if self.newline else '')
+        sw: Stopwatch = sleep_with_timing(cfg.msnap)
+        if cfg.verbose>0:
+          print(f"{cfg.verbose} - elapsed={sw}")
+        if cfg.fb_str:
+            print(f"{cfg.fb_str}", end=os.linesep if cfg.newline else '', flush=True)
 
     @staticmethod
     def show_error(msg: str):
         pfx = '' if 'ERR>' in msg else 'ERR> '
         sys.stderr.write(f"{pfx}{msg}")
 
-    def main(self, args) -> int:
-        parsed = self.parse_args(args)
-
-        self.populate_args(parsed)
-        self.dbg1(f"parsed={str(parsed)}, nap={self.msnap}")
-
-        try:
-            if self.msnap > 0:
-                self.do_nap()
-                return 0
-            else:
-                MsNap.show_error(f"ERR> Requires a millisecond_nap argument [with -n or direct]\n\n")
-                self.parser.print_help()
-        # TODO - allow for generic exception not working
-        except Exception as e:
-            MsNap.show_error(f"exception = {str(e)}")
-            self.parser.print_help()
-
-        return 1
-
 if __name__ == "__main__":
-    app: MsNap = MsNap()
-    sys.exit(app.main(sys.argv))
+    app()
