@@ -1,0 +1,59 @@
+from dataclasses import dataclass
+from typing import (Annotated, Optional)
+import typer
+
+# remove the completion related help text
+# , "ignore_unknown_options": True
+app = typer.Typer(help="blah",
+                  add_completion=False, rich_markup_mode="markdown",
+                  context_settings={"help_option_names": ["-h", "--help", "-?"],
+                                    "allow_extra_args": True,
+                                    "ignore_unknown_options": True, }
+                  )
+
+class Klass:
+  @dataclass
+  class KlassConfig:
+    verbosity: int = 0
+
+    def dump(self, message:str="") -> str:
+      msg_str = f"{message}-" if len(message or "") > 0 else ""
+      ret_str: str = f"{msg_str}DUMP: "
+      ret_str = ret_str + "verbosity={self.verbosity}, "
+      return ret_str
+
+  # --- Main Command ---
+  @staticmethod
+  @app.command()
+  def entry_point(ctx: typer.Context,
+            full: Annotated[int, typer.Option("-f", "-full, "--full",
+                                                   help="")] = None,
+    
+            verbosity: Annotated[int, typer.Option("-v", count=True,
+                                                   help="Set verbosity level. Allows -vvv for more verbosity")] = 0,
+            vlevel: Annotated[int, typer.Option("--verbosity", "-vrb",
+                                                help="Specify a verbosity level, 1=warning, 2=info,3=debug etc.")] = 0,
+  ) -> None:
+    if vlevel>0:
+      verbosity=vlevel
+    # prepare config
+    cfg: Klass.KlassConfig = Klass.KlassConfig(verbosity=verbosity)
+
+    # prepare and setup other configurations
+    print(f"{cfg.dump(f"ENTRY args={ctx.args}")}")
+
+    # supply config into context, if there are other commands!
+    ctx.obj = cfg
+
+    kk: Klass = Klass()
+    kk.biz_logic(cfg, ctx.args)
+
+  def bix_logic(self, cfg: Klass.KlassConfig, args: list[str] = None):
+    print(f"{cfg.dump(f"args={args}")}")
+
+
+#
+# Entry point into the script!
+#
+if __name__ == "__main__":
+    app()

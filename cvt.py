@@ -6,12 +6,20 @@
 ###############################################################################
 
 from argparse import ArgumentParser
-from distutils.util import  strtobool
+#from distutils.util import  strtobool
 
 import os
 import pendulum as pdl
 import re
 import sys
+
+#    "distutils",
+# /// script
+# dependencies = [
+#    "argparse",
+#    "pendulum",
+# ]
+# ///
 
 # pendulum.parse(str)
 # pendulum.from_format('Saturday July 23 11:05pm', 'dddd MMMM DD hh:mma')
