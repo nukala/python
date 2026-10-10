@@ -2,6 +2,7 @@ import argparse
 import os
 import subprocess
 import traceback
+import typer 
 import zipfile
 from pathlib import Path
 from types import NoneType
@@ -10,6 +11,7 @@ from typing import List, Literal, Optional
 # /// script
 # dependencies = [
 #    "psutil",
+#    "typer",
 #    "typing",
 # ]
 # ///
@@ -183,6 +185,7 @@ def delete_zipfn(zip_fn: str, verbosity: int = 0):
         dbgln(f"executing [{cmd}]")
         run_shell_command(cmd, verbosity=verbosity)    
 
+# WIP - adjust for git-root folder. running this in subdir fails!
 def create_backup_zip(
         source_dir: str,
         backup_mode: Literal["full", "visible", "uncommitted"],
@@ -204,7 +207,8 @@ def create_backup_zip(
         raise ValueError("Invalid backup mode")
 
     if not files:
-        print("No files to backup.")
+        #print("No files to backup.")
+        typer.secho("No files to backup.", fg=typer.colors.RED, bold=True)
         return None
 
     dbgln(f"Backing up {len(files)} files. ", 1, verbosity)

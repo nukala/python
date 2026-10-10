@@ -52,6 +52,7 @@ app = typer.Typer(add_completion=False, rich_markup_mode="markdown", name="md5",
 
 
 class Md5:
+    NUM_FILES_B4_FLUSH:int = 50
 
     @dataclass
     class MdConfig:
@@ -175,7 +176,7 @@ class Md5:
             files.extend(args)
 
         if cfg.verbosity>5:
-            print(f"{' '*cfg.verbosity} files[{files}].{len(files)}, cfg={cfg.dump_config("biz-logic", dirs_also=True)}")
+            print(f"{' '*cfg.verbosity} files[{files}].{len(files)}, cfg={cfg.dump_config("biz-logic", dirs_also=True)}", flush=True)
         num_done:int = 0
         for fname in files:
             if cfg.verbosity>4:
@@ -188,10 +189,10 @@ class Md5:
                 num_done += 1
                 if not the_hash:
                     continue
-                do_flsh:bool = True if num_done % 20 == 0 else False
-                #if cfg.verbosity>1 and do_flsh:
-                #    print(f" {cfg.verbosity} num_done={num_done}, do_flsh={do_flsh}")
-                print(f"{self.build_output(cfg, adj_path, the_hash)}", end=f"{self.build_end(cfg)}", flush=do_flsh)
+                do_flush:bool = True if num_done % Md5.NUM_FILES_B4_FLUSH == 0 else False
+                if cfg.verbosity>1 and do_flush:
+                    print(f" {cfg.verbosity} forcing_flush num_done={num_done}%{Md5.NUM_FILES_B4_FLUSH}, do_flush={do_flush}")
+                print(f"{self.build_output(cfg, adj_path, the_hash)}", end=f"{self.build_end(cfg)}", flush=do_flush)
             except (OSError, PermissionError, FileNotFoundError, WindowsError, UnicodeEncodeError) as e:
                 print(f"{adjusted}\n\n")
 

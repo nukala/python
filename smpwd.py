@@ -45,6 +45,7 @@ if __name__ == "__main__":
     end = os.linesep
 
   folder = parsed.the_path
+  # WIP substitute ~ appropriately
   if folder is None:
     folder = get_pwd()
 
