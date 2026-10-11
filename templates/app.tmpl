@@ -1,6 +1,13 @@
 from dataclasses import dataclass
 from typing import (Annotated, Optional)
 import typer
+from basern.stack import (get_func_name_with_sys)
+
+# /// script
+# dependencies = [
+#    "typer",
+# ]
+# ///
 
 # remove the completion related help text
 # , "ignore_unknown_options": True
@@ -17,7 +24,8 @@ class Klass:
     verbosity: int = 0
 
     def dump(self, message:str="") -> str:
-      msg_str = f"{message}-" if len(message or "") > 0 else ""
+      fn:str = get_func_name_with_sys(1)
+      msg_str = f"{fn}: {message}-" if len(message or "") > 0 else ""
       ret_str: str = f"{msg_str}DUMP: "
       ret_str = ret_str + "verbosity={self.verbosity}, "
       return ret_str

@@ -4,8 +4,10 @@
 from datetime import (date, datetime, timedelta)
 from dataclasses import dataclass
 from typing import (Annotated, Optional)
+
 import typer
 import sys
+from basern.stack import (get_func_name_with_sys)
 
 # /// script
 # dependencies = [
@@ -29,7 +31,7 @@ app = typer.Typer(help="Week number calculator",
 # Flexible / multi-format strings, Return a default date today, input Strings only
 # pls ask questions first
 @staticmethod
-def parse_date(s: str, default: date = date.today(), verbosity: int = 9,) -> date:
+def parse_date(s: str, default: date = date.today(), verbosity: int = 0,) -> date:
     """
     Convert a string into a datetime.date.
 
@@ -65,23 +67,24 @@ def parse_date(s: str, default: date = date.today(), verbosity: int = 9,) -> dat
         "%m/%d/%y", "%m-%d/%y", "%m%d%y",
     )
 
+    fn:str = get_func_name_with_sys(1)
     for fmt in formats:
         try:
             dt:date = datetime.strptime(s, fmt).date()
             if verbosity>0:
-                print(f"parse_date: s={s}, fmt={fmt}, parsed={dt}")
+                print(f"{fn}: s={s}, fmt={fmt}, parsed={dt}")
             return dt
         except ValueError as ve:
             if verbosity>2:
-                print(f"parse_date: s=[{s}], failed e={ve}")
+                print(f"{fn}: s=[{s}], failed e={ve}")
             continue
 
     if verbosity>0:
-        typer.secho(f"parse_date: could not parse '{s}' → returning {default}", 
+        typer.secho(f"{fn}: could not parse '{s}' → returning {default}", 
                     fg=typer.colors.RED)
     return default
 
-# TEST: wknum; wknum -w 50 -d 2; wknum -a 1; wknum -s 1; wknum -of 26/09/29
+# TEST: wknum; wknum -w 50 -d 2; wknum -a 1; wknum -s 1; wknum -of 26/04/15
 class DtUtils:
   the_date: date = None
   verbose: int = 0
@@ -96,7 +99,7 @@ class DtUtils:
     to_sub: int = None
     wk_num: int = None
     day_num: int = None
-    asof_day: str = None
+    asof_day: date = None
     verbosity: int = 0
 
     def dump(self, message:str="") -> str:
@@ -109,7 +112,7 @@ class DtUtils:
   # --- Main Command ---
   @staticmethod
   @app.command()
-  def entry_point(ctx: typer.Context,
+  def start(ctx: typer.Context,
             to_add: Annotated[int, typer.Option("-a", "-add", "--add",
                                                    help="Add weeks to current week number, ONLY ONE of add|sub")] = None,
             to_sub: Annotated[int, typer.Option("-s", "-sub", "--sub", "--subtract",
@@ -126,6 +129,7 @@ class DtUtils:
             vlevel: Annotated[int, typer.Option("--verbosity", "-vrb",
                                                 help="Specify a verbosity level, 1=warning, 2=info,3=debug etc.")] = 0,
   ) -> None:
+    fn:str = get_func_name_with_sys(1)
     if vlevel>0:
       verbosity=vlevel
 
@@ -143,8 +147,21 @@ class DtUtils:
     cfg.to_add=to_add
     cfg.to_sub=to_sub
     cfg.wk_num=week_num
-    cfg.day_num=day_num
-    cfg.asof_day=asof_day
+    if day_num: 
+      if 1 <= day_num <= 7:
+        cfg.day_num=day_num
+      else:
+        typer.secho(f"{fn} - invalid day_num={day_num}, allowed range [1, 7]",
+                   fg = typer.colors.RED)
+        sys.exit(1)
+    
+    if asof_day:
+      dt=parse_date(asof_day, None, cfg.verbosity)
+      if not dt:
+        typer.secho(f"{fn} - specified date=\"{asof_day}\" is not parsable", fg=typer.colors.RED, bold=True)
+        sys.exit(1)
+      
+      cfg.asof_day=dt
 
     # supply config into context, if there are other commands!
     ctx.obj = cfg
@@ -158,7 +175,7 @@ class DtUtils:
       print(f"cfg={cfg.dump(f"args={args}")}")
 
     if cfg.asof_day:
-      self.the_date = parse_date(cfg.asof_day, verbosity=cfg.verbosity)
+      self.the_date = cfg.asof_day
       self.set_isofields()
 
     if cfg.to_add or cfg.to_sub:
@@ -197,17 +214,8 @@ class DtUtils:
     self.wk_num = self.the_date.isocalendar()[1]
     self.dow_num = self.the_date.isocalendar()[2]
 
-  # def then(self) -> date:
-  #   if not self.the_date:
-  #     self.the_date = date.today()
-
-  #   return self.the_date
-
-  # def wknum(self):
-  #   return self.then().isocalendar()[1]
-
   def __str__ (self):
-    return f"{self.the_date} is weekNumber: {self.the_date.isocalendar()[1]}"
+    return f"For {self.the_date.strftime("%a, %m/%d/%Y")} - week_number={self.the_date.isocalendar()[1]}"
 
 
 if __name__ == '__main__':
