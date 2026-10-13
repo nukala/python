@@ -1,6 +1,6 @@
 import re
 from typing import Union
-
+from basern.stack import (get_func_name_with_sys, StackDump)
 
 # /// script
 # dependencies = [
@@ -8,7 +8,7 @@ from typing import Union
 # ///
 
 # --- String Parsing Engine ---
-def parse_numeric_string(value: str, verbose:int=0) -> float:
+def parse_numeric_string(value: str, desc:str = "", verbose:int=0) -> float:
     """Converts shorthand strings (10k, 1.5M, $10_000) into floats.
 
     Args:
@@ -21,14 +21,20 @@ def parse_numeric_string(value: str, verbose:int=0) -> float:
     Raises:
         ValueError: if not string, empty string or unparse-able string
     """
+    # fn_msg=""
+    # if desc == "salary":
+    #     for i in range(7):
+    #         fn_msg = fn_msg + f"({i})={get_func_name_with_sys(i)}, "
+    #     print(f"all-indices, func_names: {fn_msg}", flush=True)
+    fn = f"{get_func_name_with_sys(StackDump.CALLER)}{"" if len(desc) == 0 else f"-\"{desc}\""} : "
     if not isinstance(value, str):
-        raise TypeError("Input must be a string")
+        raise TypeError(f"Input must be a string")
     if not value or not value.strip():
         return 0.0
 
     cleaned = re.sub(r'[$,_]', '', value).strip().lower()
-    if verbose>2:
-        print(f"{' '*verbose} value=[{value}] got cleaned into [{cleaned}]")
+    # if verbose>3:
+    #     print(f"{' '*verbose} value=[{value}] got cleaned into [{cleaned}]")
 
     suffixes = {
         'k': 1_000.0,
@@ -46,7 +52,7 @@ def parse_numeric_string(value: str, verbose:int=0) -> float:
         try:
             ret:float = float(number_part) * multiplier
             if verbose>1:
-                print(f"{' '*verbose} value={value}, mult={multiplier}, ret={ret}")
+                print(f"{fn} value={value}, mult={multiplier}, ret={ret}")
             return ret
         except ValueError as e:
             raise ValueError(f"Could not parse numeric part of string: '{value}'") from e
@@ -54,7 +60,7 @@ def parse_numeric_string(value: str, verbose:int=0) -> float:
     try:
         ret:float = float(cleaned)
         if verbose>1:
-            print(f"{' '*verbose} value={value}, ret={ret}")
+            print(f"{fn} value={value}, ret={ret}")
         return ret
     except ValueError as e:
         raise ValueError(f"Invalid numeric string format: '{value}'") from e

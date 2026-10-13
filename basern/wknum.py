@@ -7,7 +7,7 @@ from typing import (Annotated, Optional)
 
 import typer
 import sys
-from basern.stack import (get_func_name_with_sys)
+from basern.stack import (get_func_name_with_sys, StackDump)
 
 # /// script
 # dependencies = [
@@ -67,7 +67,7 @@ def parse_date(s: str, default: date = date.today(), verbosity: int = 0,) -> dat
         "%m/%d/%y", "%m-%d/%y", "%m%d%y",
     )
 
-    fn:str = get_func_name_with_sys(1)
+    fn:str = get_func_name_with_sys(StackDump.CURRENT_METHOD)
     for fmt in formats:
         try:
             dt:date = datetime.strptime(s, fmt).date()
@@ -129,7 +129,7 @@ class DtUtils:
             vlevel: Annotated[int, typer.Option("--verbosity", "-vrb",
                                                 help="Specify a verbosity level, 1=warning, 2=info,3=debug etc.")] = 0,
   ) -> None:
-    fn:str = get_func_name_with_sys(1)
+    fn:str = get_func_name_with_sys(StackDump.CURRENT_METHOD)
     if vlevel>0:
       verbosity=vlevel
 
@@ -156,12 +156,10 @@ class DtUtils:
         sys.exit(1)
     
     if asof_day:
-      dt=parse_date(asof_day, None, cfg.verbosity)
-      if not dt:
+      cfg.asof_day=parse_date(asof_day, None, cfg.verbosity)
+      if not cfg.asof_day:
         typer.secho(f"{fn} - specified date=\"{asof_day}\" is not parsable", fg=typer.colors.RED, bold=True)
         sys.exit(1)
-      
-      cfg.asof_day=dt
 
     # supply config into context, if there are other commands!
     ctx.obj = cfg

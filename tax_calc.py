@@ -2,6 +2,7 @@ import typer
 
 from basern.number_utils import parse_numeric_string
 from typing import Annotated
+from basern.stack import (get_func_name_with_sys)
 
 
 # /// script
@@ -61,16 +62,16 @@ class TaxCalculator:
             verbosity=vlevel
         try:
             # Convert all incoming strings to real floats
-            salary = parse_numeric_string(salary_str, verbosity)
-            bonus = parse_numeric_string(bonus_str, verbosity)
-            ordinary_interest = parse_numeric_string(interest_str, verbosity)
-            short_term_cg = parse_numeric_string(stcg_str, verbosity)
-            business_net = parse_numeric_string(business_str, verbosity)
-            rental_net = parse_numeric_string(rental_str, verbosity)
-            retirement_dist = parse_numeric_string(retirement_str, verbosity)
-            long_term_cg = parse_numeric_string(ltcg_str, verbosity)
-            pretax_contributions = parse_numeric_string(pretax_str, verbosity)
-            qualified_dividends = parse_numeric_string(qualdv_str, verbosity)
+            salary = parse_numeric_string(salary_str, "salary", verbosity)
+            bonus = parse_numeric_string(bonus_str, "bonus", verbosity)
+            ordinary_interest = parse_numeric_string(interest_str, "int", verbosity)
+            short_term_cg = parse_numeric_string(stcg_str, "stcg", verbosity)
+            business_net = parse_numeric_string(business_str, "biz", verbosity)
+            rental_net = parse_numeric_string(rental_str, "rntl", verbosity)
+            retirement_dist = parse_numeric_string(retirement_str, "retr-dist", verbosity)
+            long_term_cg = parse_numeric_string(ltcg_str, "ltcg", verbosity)
+            pretax_contributions = parse_numeric_string(pretax_str, "pretax", verbosity)
+            qualified_dividends = parse_numeric_string(qualdv_str, "qual-divs", verbosity)
 
             if verbosity>0:
                 print(f" salary={salary}, bonus={bonus}, ordinary_interest={ordinary_interest},"
@@ -145,7 +146,7 @@ class TaxCalculator:
         if verbosity>=1:
             typer.echo(f"CA Base Progressive Tax:     ${ca_base_tax:,.2f}")
             typer.echo(f"CA Mental Health Surtax:     ${ca_surtax:,.2f}")
-        ca_tax_rate = 0.0 if ordinary_income <= 0 else (total_ca_tax*100.0)/ca_taxable
+        ca_tax_rate = 0.0 if ordinary_income <= 0 or ca_taxable <= 0 else (total_ca_tax*100.0)/ca_taxable
         typer.secho(f"Total Estimated CA Tax:      ${total_ca_tax:,.2f}"
                     f" ({ca_tax_rate:,.2f}%)"
                     f" marginal={ca_marginal_rate:,.2f}%"
@@ -154,8 +155,16 @@ class TaxCalculator:
         if verbosity>1:
             typer.secho("\n")
 
-        combined_rate:float = 0.0 if ordinary_income<=0 \
-            else (total_fed_tax+total_ca_tax)/max((fed_taxable_ltcg+fed_taxable_ordinary), ca_taxable)
+        ordinary_max = max((fed_taxable_ltcg+fed_taxable_ordinary), ca_taxable)
+        combined_rate:float = 0.0
+        if ordinary_income <= 0:
+            if verbosity>0:
+                print(f"Too low ordinary income={ordinary_income}")
+        elif ordinary_max <= 0:
+            if verbosity>0:
+                print(f"Too low ordinary_max(fed={fed_taxable_ltcg+fed_taxable_ordinary}, ca={ca_taxable})")
+        else:
+            combined_rate = (total_fed_tax+total_ca_tax) / ordinary_max
         roth_str=""
         if retirement_dist > 0:
             roth_str=f" roth=${(retirement_dist*(1-combined_rate)):,.0f}"
