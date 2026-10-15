@@ -68,6 +68,7 @@ def parse_date(s: str, default: date = date.today(), verbosity: int = 0,) -> dat
     )
 
     fn:str = get_func_name_with_sys(StackDump.CURRENT_METHOD)
+    failures:list[str]=[]
     for fmt in formats:
         try:
             dt:date = datetime.strptime(s, fmt).date()
@@ -75,13 +76,12 @@ def parse_date(s: str, default: date = date.today(), verbosity: int = 0,) -> dat
                 print(f"{fn}: s={s}, fmt={fmt}, parsed={dt}")
             return dt
         except ValueError as ve:
-            if verbosity>2:
-                print(f"{fn}: s=[{s}], failed e={ve}")
+            failures.append(fmt)
             continue
 
     if verbosity>0:
-        typer.secho(f"{fn}: could not parse '{s}' → returning {default}", 
-                    fg=typer.colors.RED)
+        typer.secho(f"{fn}: could not parse '{s}', tried_formats=[{", ".join(failures)}]" 
+                    + f" → returning {default}", fg=typer.colors.RED)
     return default
 
 # TEST: wknum; wknum -w 50 -d 2; wknum -a 1; wknum -s 1; wknum -of 26/04/15
@@ -103,7 +103,8 @@ class DtUtils:
     verbosity: int = 0
 
     def dump(self, message:str="") -> str:
-      msg_str = f"{message}-" if len(message or "") > 0 else ""
+      fn:str = f"{get_func_name_with_sys(StackDump.CALLER)}"
+      msg_str:str = f"{fn} {message}-" if len(message or "") > 0 else ""
       ret_str: str = f"{msg_str}DUMP: "
       ret_str = ret_str + f"asof_day={self.asof_day}, add={self.to_add}, sub={self.to_sub}, "
       ret_str = ret_str + f"wk={self.wk_num}, day={self.day_num}, verbosity={self.verbosity}, "
@@ -136,7 +137,7 @@ class DtUtils:
     # prepare config
     cfg: DtUtils.DtUtilsConfig = DtUtils.DtUtilsConfig(verbosity=verbosity)
     if cfg.verbosity>0:
-      print(f"entry_point: add={to_add}, sub={to_sub}")
+      print(f"{fn}: add={to_add}, sub={to_sub}")
 
     # check consistency of params
     if to_sub and to_add:
