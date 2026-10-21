@@ -60,7 +60,7 @@ def parse_numeric_string(value: str, desc:str = "", verbose:int=0) -> float:
     try:
         ret:float = float(cleaned)
         if verbose>1:
-            print(f"{fn} value={value}, ret={ret}")
+            print(f"{fn} value={value}, ret={ret:,.2f}")
         return ret
     except ValueError as e:
         raise ValueError(f"Invalid numeric string format: '{value}'") from e
