@@ -5,7 +5,6 @@ import traceback
 import typer 
 import zipfile
 from pathlib import Path
-from types import NoneType
 from typing import List, Literal, Optional
 
 # /// script

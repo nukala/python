@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# coding: utf-8
-
 import sys
 import traceback
 from argparse import ArgumentParser
@@ -10,7 +7,7 @@ import send2trash
 from basern.file_info import format_ls_name
 from basern.getmtag import GetMtag
 from basern.rnutils import is_exists
-from basern.yesno import bool_yesno
+from basern.yesno import YesNo
 from ghsv import dbgln
 from md5 import Md5
 
@@ -128,7 +125,7 @@ class Rbt:
       if not self.skip_listing:
         self.do_list(fn, self.verbose)
       if self.interactive:
-        do_remove = bool_yesno(f"Remove [{fn}] (y/n) [n] ")
+        do_remove = YesNo.bool_yesno(f"Remove [{fn}] (y/n) [n] ")
       try:
         if do_remove:
           send2trash.send2trash(fn)

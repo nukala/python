@@ -4,6 +4,13 @@
 from rnutils import *
 from yesno import *
 from os import *
+import typer
+
+# /// script
+# dependencies = [
+#    "typer",
+# ]
+# ///
 
 """
 Given a hardcoded other dir, compares all files in this folder (not using MF) to the other_dir 
@@ -120,4 +127,7 @@ def main() :
 #    do_run(['rm', '-ri', f"../{bsnm}"], lstr.logf)
 
 if __name__ == "__main__" :
+  # comment or delete 2 lines
+  typer.secho("WIP see source", fg=typer.colors.RED, bg=typer.colors.WHITE, bold=True)
+  sys.exit(123)
   sys.exit(main())

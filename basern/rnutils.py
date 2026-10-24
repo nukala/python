@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import IO, Final
 from basern.getmtag import is_windows
-from basern.yesno import bool_yesno
+from basern.yesno import YesNo
 
 import inspect
 import os
@@ -365,7 +365,7 @@ def do_run(cmd, logf, inpt=None, special_env=None, show_cmd=False, show_result=T
 def ask_then_run(cmd, logf, inpt=None, special_env=None, show_result=True, show_feedback=False):
     write_log(logf, cmd)
     stat = None
-    if not bool_yesno(f'Start {cmd}: (y/n) [n] '):
+    if not YesNo.bool_yesno(f'Start {cmd}: (y/n) [n] '):
         if show_feedback:
             tee_log(logf, "NOT running as requested!")
         else:

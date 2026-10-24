@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import (Annotated, Optional)
 import typer
-from basern.stack import (get_func_name_with_sys)
+from basern.stack import (get_func_name_with_sys, StackDump)
 
 # /// script
 # dependencies = [
@@ -20,12 +20,12 @@ app = typer.Typer(help="blah",
 
 class Klass:
   @dataclass
-  class KlassConfig:
+  class KlassCfg:
     verbosity: int = 0
 
     def dump(self, message:str="") -> str:
-      fn:str = get_func_name_with_sys(1)
-      msg_str = f"{fn}: {message}-" if len(message or "") > 0 else ""
+      fn:str = get_func_name_with_sys(StackDump.CALLER) + "-"
+      msg_str = fn + f"{message}-" if len(message or "") > 0 else ""
       ret_str: str = f"{msg_str}DUMP: "
       ret_str = ret_str + "verbosity={self.verbosity}, "
       return ret_str
@@ -34,18 +34,22 @@ class Klass:
   @staticmethod
   @app.command()
   def entry_point(ctx: typer.Context,
-            full: Annotated[int, typer.Option("-f", "-full, "--full",
-                                                   help="")] = None,
+            some_str: Annotated[str, typer.Option("--message", "-m", "-q", show_default=False, help="something",)]=None,
+            dflt_yn: Annotated[YN_Values, typer.Option("-d", "-default", "--default", 
+                                                          help="YES OR NO enum values")] = YN_Values.NO,
     
-            verbosity: Annotated[int, typer.Option("-v", count=True,
+            verbosity: Annotated[int, typer.Option("-v", count=True, show_default=True,
                                                    help="Set verbosity level. Allows -vvv for more verbosity")] = 0,
-            vlevel: Annotated[int, typer.Option("--verbosity", "-vrb",
+            vlevel: Annotated[int, typer.Option("--verbosity", "-vrb", show_default=False,
                                                 help="Specify a verbosity level, 1=warning, 2=info,3=debug etc.")] = 0,
   ) -> None:
     if vlevel>0:
       verbosity=vlevel
+
+    fn:str = f"{get_func_name_with_sys(StackDump.CURRENT_METHOD)} -" if verbosity>0 else ""
+
     # prepare config
-    cfg: Klass.KlassConfig = Klass.KlassConfig(verbosity=verbosity)
+    cfg: Klass.KlassCfg = Klass.KlassCfg(verbosity=verbosity)
 
     # prepare and setup other configurations
     print(f"{cfg.dump(f"ENTRY args={ctx.args}")}")
@@ -56,8 +60,12 @@ class Klass:
     kk: Klass = Klass()
     kk.biz_logic(cfg, ctx.args)
 
-  def bix_logic(self, cfg: Klass.KlassConfig, args: list[str] = None):
+  def bix_logic(self, cfg: Klass.KlassCfg, args: list[str] = None):
     print(f"{cfg.dump(f"args={args}")}")
+    # comment or delete 2 lines
+    typer.secho("WIP see source", fg=typer.colors.RED, bg=typer.colors.WHITE, bold=True)
+    sys.exit(123)
+
 
 
 #

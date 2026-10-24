@@ -1,10 +1,16 @@
-#!/usr/bin/env python3
-# coding: utf-8
-
-from getmtag import GetMtag
-from rnutils import *
-from yesno import bool_yesno
-from yesno import yes_no
+from rnutils import (
+  do_run,
+  get_gitbranch,
+  get_gitroot,
+  get_long_filename,
+  get_prog,
+  get_pwd,
+  getoutput_from_run,
+  log_started_message,
+  tee_log,
+  write_log,
+)
+from yesno import YesNo
 
 import argparse
 import datetime
@@ -20,6 +26,7 @@ import time
 
 # /// script
 # dependencies = [
+#    "typer",
 #    "pyperclip",
 # ]
 # ///
@@ -128,6 +135,7 @@ def git_path(root, path):
 #   """
 #   " Copies the specified name into clipboard in a OS independent fashion
 #   """
+#   from getmtag import GetMtag
 #   mtag = GetMtag().to_string()
 #   cmd = None
 #   if mtag == "PC":
@@ -162,7 +170,7 @@ def main(args):
     tee_log(logf, f"No git root in {get_pwd()} or its parent folders, failing")
     return 1
 
-  lf = get_long_filename(prog)
+  # lf = get_long_filename(prog)
   log = get_tmp_dir("git") + os.sep + get_long_filename(prog)
   logf = open(log, "w")
 
@@ -188,7 +196,7 @@ def main(args):
     if args.verbose >= 2:
       print(f"  removing logfile={logf.name}")
     os.remove(logf.name)
-  elif yes_no(f'remove {logf.name} (y/n): ') == 0:
+  elif YesNo().yes_no(f'remove {logf.name} (y/n): ') == 0:
     os.remove(logf.name)
   else:
     copy_to_clipboard(logf.name, verbose=args.verbose)
