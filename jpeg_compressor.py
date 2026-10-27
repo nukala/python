@@ -2,12 +2,11 @@
 # JPEG Compressor Tool
 # This script compresses JPEG images with configurable quality settings,
 # measures space savings, and image quality differences.
-
-# RNTODO - fix for python jpeg_compressor.py -o . -v ~/Desktop/26jan03-ltcg.png (filenames, then png)
 import os
+# RNTODO - fix for python jpeg_compressor.py -o . -v ~/Desktop/26jan03-ltcg.png (filenames, then png)
 import sys
-import time
 import argparse
+import tempfile
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Union, Optional, Any, Tuple
@@ -16,6 +15,7 @@ from PIL import Image
 import cv2
 import traceback
 from skimage.metrics import structural_similarity as ssim
+from basern.stack import get_func_name_with_sys, StackDump
 
 
 ##############################################################################
@@ -40,8 +40,36 @@ from skimage.metrics import structural_similarity as ssim
 #    "numpy",
 #    "scikit-image",
 #    "opencv-python",
+#    "pillow",
 # ]
 # ///
+
+def is_png(fname: str|Path) -> bool:
+    file_name = Path(fname).name
+    if file_name.upper().endswith("PNG"):
+        return True
+    return False
+
+def png_to_jpg(png: str|Path, verbosity:int=0) -> Path|None:
+    """
+    Checks and converts PNG into a JPG in the tempfolder. Caller should handle life-cycle
+
+    For JPEG.save options see:
+      pillow.readthedocs.io/en/latest/handbook/image-file-formats.html#jpeg-saving
+    """
+    if not is_png(png):
+        return Path(png)
+
+    fn: str = f"{get_func_name_with_sys(StackDump.CURRENT_METHOD)} -" if verbosity > 0 else ""
+    png = Path(png)
+    jpeg_name = tempfile.gettempdir() + os.sep + png.stem + ".jpg"
+    if verbosity>0:
+        print(f"{fn} jpeg_name={jpeg_name}")
+
+    img = Image.open(png).convert('RGB')
+    
+    img.save(jpeg_name, "JPEG", quality=100, optimize=False)
+    return Path(jpeg_name)
 
 def get_non_conflicting_output_path(input_path: Path, output_dir: Path) -> Path:
     """
@@ -289,7 +317,9 @@ def main() -> int:
         verbosity = args.verbosity
     
     try:
-        compress_jpeg(args.input, args.output_dir, args.quality, resize_factor = args.resize, verbosity=verbosity)
+        jpg = png_to_jpg(args.input, verbosity=args.verbosity)
+        compress_jpeg(jpg.__str__(), args.output_dir, args.quality, resize_factor = args.resize, verbosity=verbosity)
+        Path(jpg.__str__()).unlink()
         return 0
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
