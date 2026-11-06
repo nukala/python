@@ -139,9 +139,8 @@ class Md5:
         Generate md5 sums for files and folders
         as specified via flags!
 
-        Potential bugs WIP
-        - Always generates absolute file names
-        - format_size does not work in the base code
+        WIP Always generates absolute file names
+        WIP format_size does not work in the base code
         """
         if vlevel>0:
             verbosity=vlevel
