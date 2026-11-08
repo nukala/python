@@ -75,11 +75,22 @@ def get_file_info(path: PathLike,
     )
 
 
-def format_size(size_bytes: int) -> str:
+def format_size(size_bytes: int, do_convert:bool = True) -> str:
     """Format the byte-size column. `ls -l` just prints the raw integer."""
+    """Format file size in a human-readable way"""
     if size_bytes < 0:
         raise ValueError(f"size_bytes must be non-negative, got {size_bytes}")
-    return str(size_bytes)
+    if not do_convert:
+        return str(size_bytes)
+
+    if size_bytes < 1024:
+        return f"{size_bytes} bytes"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes/1024:.2f} KB"
+    elif size_bytes < 1024*1024*1024:
+        return f"{size_bytes/(1024*1024):.2f} MB"
+    elif size_bytes < 1024*1024*1024*1024:
+        return f"{size_bytes/(1024*1024*1024):.2f} GB"
 
 
 def _format_month_day(dt: datetime) -> str:
@@ -130,21 +141,22 @@ def format_ls_line(
     info: FileInfo,
     now: datetime | None = None,
     recent_threshold: timedelta = DEFAULT_RECENT_THRESHOLD,
+    fmt_file_size: bool = False,
 ) -> str:
     """
     Produce a full `ls -l`-style info line:
         "SIZE MON DD HH:MM NAME"   or
         "SIZE MON DD  YYYY NAME"
     """
-    size = format_size(info.size_bytes)
+    size = format_size(info.size_bytes, do_convert=fmt_file_size)
     when = format_mtime(info.mtime, now=now, recent_threshold=recent_threshold)
     return f"{size} {when} {info.name}"
 
 def format_ls_name(file_name: str,
                    recent_threshold: timedelta = DEFAULT_RECENT_THRESHOLD,
-                   use_absolute: bool = True) -> str:
+                   use_absolute: bool = True, fmt_file_size: bool = False) -> str:
     return format_ls_line(get_file_info(file_name, use_absolute=use_absolute),
-                          recent_threshold=recent_threshold)
+                          recent_threshold=recent_threshold, fmt_file_size = fmt_file_size)
 
 
 if __name__ == "__main__":

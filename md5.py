@@ -139,8 +139,7 @@ class Md5:
         Generate md5 sums for files and folders
         as specified via flags!
 
-        WIP Always generates absolute file names
-        WIP format_size does not work in the base code
+        WIP absolute_name has no flag and is always ON
         """
         if vlevel>0:
             verbosity=vlevel
@@ -192,7 +191,7 @@ class Md5:
                 if cfg.verbosity>1 and do_flush:
                     print(f" {cfg.verbosity} forcing_flush num_done={num_done}%{Md5.NUM_FILES_B4_FLUSH}, do_flush={do_flush}")
                 print(f"{self.build_output(cfg, adj_path, the_hash)}", end=f"{self.build_end(cfg)}", flush=do_flush)
-            except (OSError, PermissionError, FileNotFoundError, WindowsError, UnicodeEncodeError) as e:
+            except (OSError, PermissionError, FileNotFoundError, OSError, UnicodeEncodeError) as e:
                 print(f"{adjusted}\n\n")
 
         self.end_work(cfg.directories, files, cfg.verbosity)
@@ -207,7 +206,8 @@ class Md5:
         if cfg.sum_only:
             return f"{answer}{cfg.short_sep}"
         if cfg.lsltr:
-            answer=f"{answer}  {format_ls_name(adj_path, use_absolute=not cfg.format_size)}"
+            #fln: str=format_ls_name(adj_path, fmt_file_size=cfg.format_size, use_absolute=True,)
+            answer=f"{answer}  {format_ls_name(adj_path, fmt_file_size=cfg.format_size, use_absolute=True,)}"
             return answer
 
         answer=f"{answer} {adj_path}"

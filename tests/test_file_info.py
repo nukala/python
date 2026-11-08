@@ -29,23 +29,60 @@ from basern.file_info import (
 FIXED_NOW = datetime(2024, 6, 15, 12, 0, 0)
 
 
-class FormatSizeTests(unittest.TestCase):
+class FormatSizeTestsNoConvert(unittest.TestCase):
     def test_zero(self):
-        self.assertEqual(format_size(0), "0")
+        self.assertEqual(format_size(0, False), "0")
 
     def test_small_size(self):
-        self.assertEqual(format_size(42), "42")
+        self.assertEqual(format_size(42, False), "42")
+
+    def test_typical_kbs(self):
+        self.assertEqual(format_size(9042, do_convert=False), "9042")
 
     def test_typical_size(self):
-        self.assertEqual(format_size(8535747), "8535747")
+        self.assertEqual(format_size(8535747, do_convert=False), "8535747")
 
     def test_large_size(self):
-        self.assertEqual(format_size(123456789012), "123456789012")
+        self.assertEqual(format_size(123456789012, do_convert=False), "123456789012")
+
+    def test_terra_bytes(self):
+        self.assertEqual(format_size(190_528_104_424_841, do_convert=False), "190528104424841")
+
+    def test_negative_raises(self):
+        with self.assertRaises(ValueError):
+            format_size(-1, False)
+
+
+class FormatSizeTestsWithConversion(unittest.TestCase):
+    def test_zero(self):
+        self.assertEqual(format_size(0), "0 bytes")
+
+    def test_small_size(self):
+        self.assertEqual(format_size(42, do_convert=True), "42 bytes")
+
+    def test_typical_kbs(self):
+        self.assertEqual(format_size(9042, do_convert=True), "8.83 KB")
+
+    def test_typical_size(self):
+        self.assertEqual(format_size(8535747, do_convert=True), "8.14 MB")
+
+    def test_large_size(self):
+        self.assertEqual(format_size(123456789012), "114.98 GB")
+
+    #247_000_000_000_000_000 bytes (or 247 PB).
+    # or pytest.mark.skip to ignore 
+    @unittest.skip("petabytes not coded yet")
+    def test_peta_bytes(self):
+        self.assertEqual(format_size(247_000_000_000_000_000, do_convert=True), "247 PB")
+
+    # 190_528_104_424_841
+    @unittest.skip("terrabytes not coded yet")
+    def test_terra_bytes(self):
+        self.assertEqual(format_size(190_528_104_424_841, do_convert=True), "190.5 TB")
 
     def test_negative_raises(self):
         with self.assertRaises(ValueError):
             format_size(-1)
-
 
 class IsRecentTests(unittest.TestCase):
     def test_now_exactly_is_recent(self):
