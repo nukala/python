@@ -2,9 +2,12 @@ from dataclasses import dataclass
 from typing import (Annotated, Optional)
 import typer
 from basern.stack import (get_func_name_with_sys, StackDump)
+#func:str = f"{get_func_name_with_sys(StackDump.CURRENT_METHOD, verbosity)}"
+
 
 # /// script
 # dependencies = [
+#    "multipledispatch",
 #    "typer",
 # ]
 # ///
@@ -24,8 +27,8 @@ class Klass:
     verbosity: int = 0
 
     def dump(self, message:str="") -> str:
-      fn:str = get_func_name_with_sys(StackDump.CALLER) + "-"
-      msg_str = fn + f"{message}-" if len(message or "") > 0 else ""
+      func:str = f"{get_func_name_with_sys(StackDump.CALLER, True)}"
+      msg_str = func + f"{message}-" if len(message or "") > 0 else ""
       ret_str: str = f"{msg_str}DUMP: "
       ret_str = ret_str + "verbosity={self.verbosity}, "
       return ret_str

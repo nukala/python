@@ -7,6 +7,7 @@ from ghsv import dbgln
 
 # /// script
 # dependencies = [
+#    "multipledispatch",
 #    "pillow",
 #    "pillow-heif",
 # ]

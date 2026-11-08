@@ -37,6 +37,7 @@ from basern.stack import get_func_name_with_sys, StackDump
 
 # /// script
 # dependencies = [
+#    "multipledispatch",
 #    "numpy",
 #    "scikit-image",
 #    "opencv-python",
@@ -50,7 +51,7 @@ def is_png(fname: str|Path) -> bool:
         return True
     return False
 
-def png_to_jpg(png: str|Path, verbosity:int=0) -> Path|None:
+def png_to_jpg(png: str|Path, verbosity:int=0) -> tuple[bool, Path|None]:
     """
     Checks and converts PNG into a JPG in the tempfolder. Caller should handle life-cycle
 
@@ -58,18 +59,18 @@ def png_to_jpg(png: str|Path, verbosity:int=0) -> Path|None:
       pillow.readthedocs.io/en/latest/handbook/image-file-formats.html#jpeg-saving
     """
     if not is_png(png):
-        return Path(png)
+        return False, Path(png)
 
-    fn: str = f"{get_func_name_with_sys(StackDump.CURRENT_METHOD)} -" if verbosity > 0 else ""
+    func: str = f"{get_func_name_with_sys(StackDump.CURRENT_METHOD, verbosity)}"
     png = Path(png)
     jpeg_name = tempfile.gettempdir() + os.sep + png.stem + ".jpg"
     if verbosity>0:
-        print(f"{fn} jpeg_name={jpeg_name}")
+        print(f"{func} jpeg_name={jpeg_name}")
 
     img = Image.open(png).convert('RGB')
     
     img.save(jpeg_name, "JPEG", quality=100, optimize=False)
-    return Path(jpeg_name)
+    return True, Path(jpeg_name)
 
 def get_non_conflicting_output_path(input_path: Path, output_dir: Path) -> Path:
     """
@@ -316,10 +317,15 @@ def main() -> int:
     else:
         verbosity = args.verbosity
     
+    func:str = f"{get_func_name_with_sys(StackDump.CURRENT_METHOD, verbosity)}"
     try:
-        jpg = png_to_jpg(args.input, verbosity=args.verbosity)
+        converted: bool = False
+        converted, jpg = png_to_jpg(args.input, verbosity=args.verbosity)
         compress_jpeg(jpg.__str__(), args.output_dir, args.quality, resize_factor = args.resize, verbosity=verbosity)
-        Path(jpg.__str__()).unlink()
+        if converted:
+            if verbosity > 1:
+                print(f"{func} deleting {str(jpg)}")
+            Path(jpg.__str__()).unlink()
         return 0
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import IO, Final
 from basern.getmtag import is_windows
 from basern.yesno import YesNo
+from basern.stack import (get_func_name_with_sys, StackDump)
 
 import inspect
 import os
@@ -376,7 +377,7 @@ def ask_then_run(cmd, logf, inpt=None, special_env=None, show_result=True, show_
 
     return stat
 
-def open_resolved(path: Path | str, mode: str = "rb", encoding: str = None, verbose: int = 0) -> IO|None:
+def open_resolved(path: Path | str, mode: str = "rb", encoding: str = None, verbosity: int = 0) -> IO|None:
   """
   Open a file, resolving Cygwin WSL-format symlinks on Windows/Cygwin
   before opening. On all other platforms, opens directly.
@@ -402,7 +403,7 @@ def open_resolved(path: Path | str, mode: str = "rb", encoding: str = None, verb
           text = f.read()
   """
 
-  adj_path = adjust_winpath(str(path), verbose = verbose)
+  adj_path = adjust_winpath(str(path), verbosity = verbosity)
   if adj_path is None:
       return None
 
@@ -412,13 +413,14 @@ def open_resolved(path: Path | str, mode: str = "rb", encoding: str = None, verb
       return None
 
 
-def adjust_winpath(file_name:str, verbose:int = 0) -> Path|None:
+def adjust_winpath(file_name:str, verbosity:int = 0) -> Path|None:
     """
     Adjusts file_name into WINDOwS friendly version.
     Seems like `ln -s ` only WORKS when using `CYGWIN=winsymlinks:nativestrict ln -s FROM TO`
     """
+    func:str = f"{get_func_name_with_sys(StackDump.CURRENT_METHOD, verbosity)}"
 
-    if sys.platform not in ("win32", "cygwin"):
+    if not is_windows():
         return Path(file_name)
 
     adjusted = file_name
@@ -434,32 +436,32 @@ def adjust_winpath(file_name:str, verbose:int = 0) -> Path|None:
     for key in drives:
         if file_name.startswith(key):
             repl = drives.get(key)
-            if verbose > 1:
-                print(f"[{file_name}] replacing={key} with={repl}")
+            if verbosity > 1:
+                print(f"{func} [{file_name}] replacing={key} with={repl}")
             file_name = file_name.replace(key, repl)
 
-    if verbose >= 2:
-        print(f"[{adjusted}] after replacements=[{file_name}]")
+    if verbosity >= 2:
+        print(f"{func} adj=[{adjusted}] after replacements=[{file_name}]")
 
     # fn = file_name
     # if os.path.islink(file_name):
     #     fn = os.path.readlink(file_name)
     #     # BROKEN, UNTESTABLE code for links
-    #     if verbose > 1:
+    #     if verbosity > 1:
     #         print(f" file=\"{file_name}\" is a link, resolved to={fn}\n")
     # else:
     #     # from pathlib import Path
     #     # real = Path(file_name).resolve()
     #     rs = os.lstat(file_name)
-    #     if verbose > 1:
+    #     if verbosity > 1:
     #         print(f" resolved={rs}")
     #     fn = os.path.realpath(file_name)
-    #     if verbose > 1:
+    #     if verbosity > 1:
     #         print(f" realpath={fn}, for file={file_name}\n")
 
-    return resolve_with_cygpath(file_name, verbose)
+    return resolve_with_cygpath(file_name, verbosity)
 
-def resolve_with_cygpath(path: Path | str, verbose:int = 0) -> Path | None:
+def resolve_with_cygpath(path: Path | str, verbosity:int = 0) -> Path | None:
     """
     Resolve a path that may contain Cygwin WSL-format symlinks.
 
@@ -479,31 +481,37 @@ def resolve_with_cygpath(path: Path | str, verbose:int = 0) -> Path | None:
                  reasons other than an unresolved reparse point.
         subprocess.CalledProcessError: If cygpath fails.
     """
+    func:str = f"{get_func_name_with_sys(StackDump.CURRENT_METHOD+1, verbosity)}"
     p: Path = Path(path)
 
     try:
         os.stat(p)
         return p
     except (OSError, FileNotFoundError) as e:
-        if verbose >= 2:
-            print(f"[{path}] failed to stat, e=[{str(e)}], executing cygpath\n")
+        if verbosity >= 2:
+            print(f"{func} [{path}] failed to stat, e=[{str(e)}], executing cygpath\n")
 
         if is_windows():
-            return handle_windows_failure(p, verbose)
+            return handle_windows_failure(p, verbosity)
 
 
-def handle_windows_failure(p: Path, verbose: int = 0):
+def handle_windows_failure(p: Path, verbosity: int = 0):
+    # gemini use this to avoid fork() errors 0xC0000142
+    custom_env: dict[str, str] =  os.environ.copy()
+    custom_env["cygwin"] = "noaslr"
     raw: str = subprocess.check_output(
         ["cygpath", "-aw", "--", p.as_posix()],
         stderr=subprocess.DEVNULL,
+        env = custom_env,
         text=True,  # decode stdout automatically
     ).strip()
 
-    if verbose > 3:
-        print(f"handle_windows_failure: p=[{p}], raw=[{raw}]")
+    func:str = f"{get_func_name_with_sys(StackDump.CURRENT_METHOD, verbosity)}"
+    if verbosity > 3:
+        print(f"{func} p=[{p}], raw=[{raw}], env[cygwin]={custom_env["cygwin"]}")
     if raw == str(p):
-        if verbose > 3:
-            print(f"handle_windows_failure: cygpath output is same as input, nothing resolved")
+        if verbosity > 3:
+            print(f"{func} cygpath output is same as input, nothing resolved")
         return None
     else:
         resolved: Path = Path(raw)
@@ -511,8 +519,8 @@ def handle_windows_failure(p: Path, verbose: int = 0):
             os.stat(resolved)  # validate — raises OSError if still broken
             return resolved
         except (OSError, FileNotFoundError) as ee:
-            if verbose > 3:
-                print(f"{verbose}[{p}] failed to stat after cygpath e=[{ee}]\n")
+            if verbosity > 3:
+                print(f"{func} [{p}] failed to stat after cygpath e=[{ee}]\n")
 
 def get_pwd(use_tilda:bool = True):
     """

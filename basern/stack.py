@@ -1,10 +1,12 @@
 import inspect
 import sys
+from multipledispatch import dispatch
 from typing import Final
 
 #    "typer",
 # /// script
 # dependencies = [
+#    "multipledispatch",
 # ]
 # ///
 
@@ -13,6 +15,11 @@ from typing import Final
 # Why this complexity around stack, sys etc? 
 #   see stk-tmr.sh for timing details!
 ##
+    # fn_msg=""
+    # if desc == "salary":
+    #     for i in range(7):
+    #         fn_msg = fn_msg + f"({i})={get_func_name_with_sys(i, verbosity)}, "
+    #     print(f"all-indices, func_names: {fn_msg}", flush=True)
 class StackDump:
   CURRENT_METHOD: Final[int] = 1 
   CALLER: Final[int] = 2
@@ -43,8 +50,7 @@ class StackDump:
 
     print(f"So: {gpar} -> {par} -> {caller} -> {func}")
     print(f"Depths: {get_func_name(4)} -> {get_func_name(3)} -> {get_func_name(2)} -> {get_func_name(1)}")
-    print(f"Sys: {get_func_name(5, use_sys=True)} -> {get_func_name(4, use_sys=True)} -> {get_func_name(3, use_sys=True)}" 
-      + f" -> {get_func_name(2, use_sys=True)}")
+    print(f"Sys: {get_func_name_with_sys(4, True)} -> {get_func_name_with_sys(3, True)} -> {get_func_name_with_sys(2, 9)} -> {get_func_name_with_sys(1, 4)}")
     # save this comment
     #caller: str = inspect.currentframe().f_back.f_code.co_name
     # inspect.stack() for all traces!
@@ -72,11 +78,21 @@ def impossibly_deep(depth:int = 21, use_sys:bool=False):
 
 def get_func_name(depth:int = 0, use_sys:bool = False):
   if use_sys:
-    return get_func_name_with_sys(depth)
+    return get_func_name_with_sys(depth, True)
   return inspect.stack()[depth][3]
-  
-def get_func_name_with_sys(depth:int = 0):
-  return sys._getframe(depth).f_code.co_name
+
+@dispatch(int, int)
+def get_func_name_with_sys(depth:int = 0, verbosity:int = 0):
+  # Added one, to accomodate the decorator 
+  func: str = f"{sys._getframe(depth+1).f_code.co_name} -" if verbosity > 0 else ""
+  # if verbosity > 0:
+    # print(f" func={func}, verbosity={verbosity}, depth={depth}, sys={sys._getframe(depth)}")
+  return func
+
+@dispatch(int, bool)
+def get_func_name_with_sys(depth:int = 0, verbose:bool = False):
+  # Added one, to accomodate the decorator 
+  return f"{sys._getframe(depth+1).f_code.co_name} -" if verbose else ""
 
 if __name__ == "__main__":
     StackDump().a()

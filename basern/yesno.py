@@ -9,6 +9,7 @@ from basern.stack import StackDump, get_func_name_with_sys
 
 # /// script
 # dependencies = [
+#    "multipledispatch",
 #    "typer",
 # ]
 # ///
@@ -33,12 +34,12 @@ class YesNo:
 
   def yes_no(self, to_ask:str = None, default_value:int = 1, verbosity:int = 0):
     pmpt = "Yes_or_No ?" if to_ask is None else to_ask
-    fn:str = f"{get_func_name_with_sys(StackDump.CURRENT_METHOD)} -" if verbosity>0 else ""
+    func:str = f"{get_func_name_with_sys(StackDump.CURRENT_METHOD, verbosity)}"
 
     try:
       v = input(pmpt).upper()
       if verbosity>1:
-        print(f" {fn}answer=[{v}].{len(v)}", flush=True)
+        print(f" {func}answer=[{v}].{len(v)}", flush=True)
 
       if len(v) <= 0:
         return default_value
@@ -77,16 +78,16 @@ class YesNo:
     if vlevel>0:
       verbosity=vlevel
 
-    fn:str = f"{get_func_name_with_sys(StackDump.CURRENT_METHOD)} -" if verbosity>0 else ""
+    func:str = f"{get_func_name_with_sys(StackDump.CURRENT_METHOD, verbosity)}"
 
     if verbosity>1:
-      print(f"{fn} msg=[{message_str}].{len(message_str or "")}, dflt={default_yn} ")
+      print(f"{func} msg=[{message_str}].{len(message_str or "")}, dflt={default_yn} ")
     if not message_str and len(ctx.args or []) > 0:
       message_str = ctx.args[0]
 
     if len(message_str or "") == 0:
       if verbosity>0:
-        print(f"{fn} message=[{message_str}], using defalt_message")
+        print(f"{func} message=[{message_str}], using defalt_message")
       message_str = f"yes/no [{default_yn.name[0].lower()}]? "
 
     ## business logic

@@ -3,6 +3,7 @@
 
 # /// script
 # dependencies = [
+#    "multipledispatch",
 #    "psutil",
 #    "typer",
 # ]
@@ -102,17 +103,17 @@ class Md5:
         return hasher.hexdigest()
 
     @staticmethod
-    def process_inline(file_name: str, verbose: int = 0)-> str | None:
-        if verbose > 0:
+    def process_inline(file_name: str, verbosity: int = 0)-> str | None:
+        if verbosity > 0:
             print(f"process_inline: Input filename=[{file_name}]")
 
         ff: IO|None=None
         try:
-            ff = open_resolved(file_name, verbose=verbose)
+            ff = open_resolved(file_name, verbosity=verbosity)
             if ff:
                 return hashlib.file_digest(ff, "md5").hexdigest()
-            elif verbose > 0:
-                print(f"{verbose} file_name={file_name} could not be opened")
+            elif verbosity > 0:
+                print(f"{verbosity} file_name={file_name} could not be opened")
         finally:
             if ff is not None:
                 ff.close()
@@ -179,7 +180,7 @@ class Md5:
         for fname in files:
             if cfg.verbosity>4:
                 print(f"{' '*cfg.verbosity} file=[{fname}]")
-            adj_path = adjust_winpath(fname, verbose=cfg.verbosity > 0)
+            adj_path = adjust_winpath(fname, verbosity=cfg.verbosity)
             adjusted = str(adj_path or "")
 
             try:

@@ -11,6 +11,7 @@ from basern.stack import (get_func_name_with_sys, StackDump)
 
 # /// script
 # dependencies = [
+#    "multipledispatch",
 #    "typer",
 #    "typing",
 # ]
@@ -67,20 +68,20 @@ def parse_date(s: str, default: date = date.today(), verbosity: int = 0,) -> dat
         "%m/%d/%y", "%m-%d/%y", "%m%d%y",
     )
 
-    fn:str = get_func_name_with_sys(StackDump.CURRENT_METHOD)
+    func:str = get_func_name_with_sys(StackDump.CURRENT_METHOD, verbosity)
     failures:list[str]=[]
     for fmt in formats:
         try:
             dt:date = datetime.strptime(s, fmt).date()
             if verbosity>0:
-                print(f"{fn}: s={s}, fmt={fmt}, parsed={dt}")
+                print(f"{func}: s={s}, fmt={fmt}, parsed={dt}")
             return dt
         except ValueError as ve:
             failures.append(fmt)
             continue
 
     if verbosity>0:
-        typer.secho(f"{fn}: could not parse '{s}', tried_formats=[{", ".join(failures)}]" 
+        typer.secho(f"{func}: could not parse '{s}', tried_formats=[{", ".join(failures)}]" 
                     + f" → returning {default}", fg=typer.colors.RED)
     return default
 
@@ -103,8 +104,8 @@ class DtUtils:
     verbosity: int = 0
 
     def dump(self, message:str="") -> str:
-      fn:str = f"{get_func_name_with_sys(StackDump.CALLER)}"
-      msg_str:str = f"{fn} {message}-" if len(message or "") > 0 else ""
+      func:str = f"{get_func_name_with_sys(StackDump.CALLER, True)}"
+      msg_str:str = f"{func} {message}-" if len(message or "") > 0 else ""
       ret_str: str = f"{msg_str}DUMP: "
       ret_str = ret_str + f"asof_day={self.asof_day}, add={self.to_add}, sub={self.to_sub}, "
       ret_str = ret_str + f"wk={self.wk_num}, day={self.day_num}, verbosity={self.verbosity}, "
@@ -130,14 +131,14 @@ class DtUtils:
             vlevel: Annotated[int, typer.Option("--verbosity", "-vrb",
                                                 help="Specify a verbosity level, 1=warning, 2=info,3=debug etc.")] = 0,
   ) -> None:
-    fn:str = get_func_name_with_sys(StackDump.CURRENT_METHOD)
+    func:str = get_func_name_with_sys(StackDump.CURRENT_METHOD, True)
     if vlevel>0:
       verbosity=vlevel
 
     # prepare config
     cfg: DtUtils.DtUtilsConfig = DtUtils.DtUtilsConfig(verbosity=verbosity)
     if cfg.verbosity>0:
-      print(f"{fn}: add={to_add}, sub={to_sub}")
+      print(f"{func}: add={to_add}, sub={to_sub}")
 
     # check consistency of params
     if to_sub and to_add:
@@ -152,14 +153,14 @@ class DtUtils:
       if 1 <= day_num <= 7:
         cfg.day_num=day_num
       else:
-        typer.secho(f"{fn} - invalid day_num={day_num}, allowed range [1, 7]",
+        typer.secho(f"{func} - invalid day_num={day_num}, allowed range [1, 7]",
                    fg = typer.colors.RED)
         sys.exit(1)
     
     if asof_day:
       cfg.asof_day=parse_date(asof_day, None, cfg.verbosity)
       if not cfg.asof_day:
-        typer.secho(f"{fn} - specified date=\"{asof_day}\" is not parsable", fg=typer.colors.RED, bold=True)
+        typer.secho(f"{func} - specified date=\"{asof_day}\" is not parsable", fg=typer.colors.RED, bold=True)
         sys.exit(1)
 
     # supply config into context, if there are other commands!

@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 # /// script
 # dependencies = [
+#    "multipledispatch",
 #    "typer",
 # ]
 # ///
@@ -59,7 +60,7 @@ class TaxCalculator:
 
         def dump_config(self, message: str = "") -> str:
             msg_str = (
-                f"{get_func_name_with_sys(StackDump.CALLER)}-" + f"{message}-"
+                f"{get_func_name_with_sys(StackDump.CALLER, True)}" + f"{message}-"
                 if len(message or "") > 0
                 else ""
             )

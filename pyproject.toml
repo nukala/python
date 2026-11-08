@@ -20,6 +20,7 @@ dependencies = [
  "markdown-it-py==4.2.0",
  "markupsafe==3.0.3",
  "mdurl==0.1.2",
+ "multipledispatch>=1.0.0",
  "networkx==3.5",
  "numpy>=2.5.4",
  "opencv-python>=5.0.0.93",

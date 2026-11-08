@@ -76,11 +76,11 @@ class TestParseNumericString:
         assert parse_numeric_string(value) == pytest.approx(expected)
 
 
-    def test_verbose_does_not_affect_result(self):
-        """verbose only controls logging; result must stay the same."""
-        assert parse_numeric_string("10k", verbose=0) == 10_000.0
-        assert parse_numeric_string("10k", verbose=1) == 10_000.0
-        assert parse_numeric_string("10k", verbose=2) == 10_000.0
+    def test_verbosity_does_not_affect_result(self):
+        """verbosity only controls logging; result must stay the same."""
+        assert parse_numeric_string("10k", verbosity=0) == 10_000.0
+        assert parse_numeric_string("10k", verbosity=1) == 10_000.0
+        assert parse_numeric_string("10k", verbosity=2) == 10_000.0
 
 
     # ---------------------------------------------------------------------------
@@ -136,9 +136,9 @@ class TestParseNumericString:
     #         parse_numeric_string(bad_value)
 
 
-    def test_verbose_with_invalid_still_raises(self):
+    def test_verbosity_with_invalid_still_raises(self):
         with pytest.raises(ValueError):
-            parse_numeric_string("not-a-number", verbose=1)
+            parse_numeric_string("not-a-number", verbosity=1)
 
 
     # ---------------------------------------------------------------------------
@@ -185,7 +185,7 @@ class TestParseNumericString:
         assert isinstance(result, float)
 
 
-    def test_default_verbose_is_zero(self):
+    def test_default_verbosity_is_zero(self):
         # Just ensure the default parameter works (no exception)
         assert parse_numeric_string("10") == 10.0
 
@@ -257,11 +257,11 @@ class TestParseDurationMs:
     def test_valid_conversions(self, value: str, expected: int):
         assert parse_duration_ms(value) == expected
 
-    def test_verbose_does_not_affect_result(self):
-        assert parse_duration_ms("1s", verbose=0) == 1_000
-        assert parse_duration_ms("1s", verbose=1) == 1_000
-        assert parse_duration_ms("1s", verbose=2) == 1_000
-        assert parse_duration_ms("30m", verbose=1) == 1_800_000
+    def test_verbosity_does_not_affect_result(self):
+        assert parse_duration_ms("1s", verbosity=0) == 1_000
+        assert parse_duration_ms("1s", verbosity=1) == 1_000
+        assert parse_duration_ms("1s", verbosity=2) == 1_000
+        assert parse_duration_ms("30m", verbosity=1) == 1_800_000
 
     @pytest.mark.parametrize(
         "bad_value",
@@ -310,9 +310,9 @@ class TestParseDurationMs:
         with pytest.raises(ValueError):
             parse_duration_ms(bad_value)
 
-    def test_verbose_with_invalid_still_raises(self):
+    def test_verbosity_with_invalid_still_raises(self):
         with pytest.raises(ValueError):
-            parse_duration_ms("not-a-duration", verbose=1)
+            parse_duration_ms("not-a-duration", verbosity=1)
 
     def test_large_values(self):
         assert parse_duration_ms("1000h") == 3_600_000_000
@@ -342,5 +342,5 @@ class TestParseDurationMs:
         assert isinstance(result, int)
         assert not isinstance(result, bool)
 
-    def test_default_verbose_is_zero(self):
+    def test_default_verbosity_is_zero(self):
         assert parse_duration_ms("1m") == 60_000

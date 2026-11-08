@@ -7,7 +7,7 @@ import shutil
 import sys
 import typer
 
-from rnutils import ( clear_screen, delete_if_older_than_today )
+from basern.rnutils import ( clear_screen, delete_if_older_than_today )
 from dataclasses import dataclass
 from datetime import datetime, date
 from enum import Enum
@@ -30,6 +30,7 @@ from typing import Annotated, Final
 
 # /// script
 # dependencies = [
+#    "multipledispatch",
 #    "psutil",
 #    "typer",
 # ]

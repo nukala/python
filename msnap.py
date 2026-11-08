@@ -7,9 +7,11 @@ from basern.number_utils import parse_duration_ms
 from basern.stopwatch import Stopwatch
 from dataclasses import dataclass
 from typing import Annotated
+from basern.stack import (get_func_name_with_sys, StackDump)
 
 # /// script
 # dependencies = [
+#    "multipledispatch",
 #    "typer",
 # ]
 # ///
@@ -40,13 +42,13 @@ class MsNap:
     @dataclass
     class MsNapConfig:
         msnap: int = 0
-        verbose: int = 0
+        verbosity: int = 0
         fb_str: str = None
         newline: bool = False
 
         def dump_config(self, message: str="") -> str:
             msg_str = f"{message}-" if len(message or "") > 0 else ""
-            return (f"{msg_str}DUMP: msnap={self.msnap}, verbose={self.verbose}," +
+            return (f"{msg_str}DUMP: msnap={self.msnap}, verbosity={self.verbosity}," +
                     f" fb_str={self.fb_str}, newline={self.newline}")
 
 
@@ -76,6 +78,7 @@ class MsNap:
             fb_str=os.linesep
 
 
+        func:str = f"{get_func_name_with_sys(StackDump.CURRENT_METHOD, verbosity)}"
         nap_ms:int = 0
         if msnap:
             nap_ms = parse_duration_ms(msnap, verbosity)
@@ -84,35 +87,37 @@ class MsNap:
             nap_ms = int(ctx.args[used])
             used=+1
             if verbosity>=2:
-                print(f" {verbosity} - converted \"{ctx.args[0]}\" into nap_ms={nap_ms}, used={used}")
+                print(f"{func}converted \"{ctx.args[0]}\" into nap_ms={nap_ms}, used={used}")
 
-        cfg: MsNap.MsNapConfig = MsNap.MsNapConfig(nap_ms, verbose=verbosity, fb_str=fb_str, newline=newline)
+        cfg: MsNap.MsNapConfig = MsNap.MsNapConfig(nap_ms, verbosity=verbosity, fb_str=fb_str, newline=newline)
         ctx.obj = cfg
         
         nap: MsNap = MsNap()
         nap.do_nap(cfg)
         for arg in ctx.args[used:]:
             try:
-                cfg.msnap = parse_duration_ms(arg, cfg.verbose)
+                cfg.msnap = parse_duration_ms(arg, cfg.verbosity)
                 nap.do_nap(cfg)
             except ValueError as err:
                 if cfg.verbose>0:
-                    print(f"err={err}")
+                    print(f"{func}err={err}")
 
     def do_nap(self, cfg: MsNap.MsNapConfig):
-        if cfg.verbose>=2:
-          print(f"{cfg.verbose} - napping for [{cfg.msnap}] millis")
+        func:str = f"{get_func_name_with_sys(StackDump.CURRENT_METHOD, True)}"
+        if cfg.verbosity>=2:
+          print(f"{func}napping for [{cfg.msnap}] millis")
 
         sw: Stopwatch = sleep_with_timing(cfg.msnap)
-        if cfg.verbose>0:
-          print(f"{cfg.verbose} - elapsed={sw}")
+        if cfg.verbosity>0:
+          print(f"{func}elapsed={sw}")
         if cfg.fb_str:
-            print(f"{cfg.fb_str}", end=os.linesep if cfg.newline else '', flush=True)
+            print(f"{func}{cfg.fb_str}", end=os.linesep if cfg.newline else '', flush=True)
 
     @staticmethod
     def show_error(msg: str):
+        func:str = f"{get_func_name_with_sys(StackDump.CURRENT_METHOD, True)}"
         pfx = '' if 'ERR>' in msg else 'ERR> '
-        sys.stderr.write(f"{pfx}{msg}")
+        sys.stderr.write(f"{func}{pfx}{msg}")
 
 if __name__ == "__main__":
     app()

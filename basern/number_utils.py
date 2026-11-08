@@ -4,16 +4,17 @@ from basern.stack import (get_func_name_with_sys, StackDump)
 
 # /// script
 # dependencies = [
+#    "multipledispatch"
 # ]
 # ///
 
 # --- String Parsing Engine ---
-def parse_numeric_string(value: str, desc:str = "", verbose:int=0) -> float:
+def parse_numeric_string(value: str, desc:str = "", verbosity:int=0) -> float:
     """Converts shorthand strings (10k, 1.5M, $10_000) into floats.
 
     Args:
         value: String whose float value needs to be converted
-        verbose: verbosity of logs, default=0 (no logs)
+        verbosity: verbosity of logs, default=0 (no logs)
 
     Returns:
         The floating point number as described above
@@ -21,20 +22,15 @@ def parse_numeric_string(value: str, desc:str = "", verbose:int=0) -> float:
     Raises:
         ValueError: if not string, empty string or unparse-able string
     """
-    # fn_msg=""
-    # if desc == "salary":
-    #     for i in range(7):
-    #         fn_msg = fn_msg + f"({i})={get_func_name_with_sys(i)}, "
-    #     print(f"all-indices, func_names: {fn_msg}", flush=True)
-    fn = f"{get_func_name_with_sys(StackDump.CALLER)}{"" if len(desc) == 0 else f"-\"{desc}\""} : "
+    func = f"{get_func_name_with_sys(StackDump.CALLER, verbosity)}{"" if len(desc) == 0 else f"-\"{desc}\""} : "
     if not isinstance(value, str):
         raise TypeError(f"Input must be a string")
     if not value or not value.strip():
         return 0.0
 
     cleaned = re.sub(r'[$,_]', '', value).strip().lower()
-    # if verbose>3:
-    #     print(f"{' '*verbose} value=[{value}] got cleaned into [{cleaned}]")
+    # if verbosity>3:
+    #     print(f"{' '*verbosity} value=[{value}] got cleaned into [{cleaned}]")
 
     suffixes = {
         'k': 1_000.0,
@@ -51,22 +47,22 @@ def parse_numeric_string(value: str, desc:str = "", verbose:int=0) -> float:
             raise ValueError(f"Missing numeric prefix before suffix in: '{value}'")
         try:
             ret:float = float(number_part) * multiplier
-            if verbose>1:
-                print(f"{fn} value={value}, mult={multiplier}, ret={ret}")
+            if verbosity>1:
+                print(f"{func} value={value}, mult={multiplier}, ret={ret}")
             return ret
         except ValueError as e:
             raise ValueError(f"Could not parse numeric part of string: '{value}'") from e
 
     try:
         ret:float = float(cleaned)
-        if verbose>1:
-            print(f"{fn} value={value}, ret={ret:,.2f}")
+        if verbosity>1:
+            print(f"{func} value={value}, ret={ret:,.2f}")
         return ret
     except ValueError as e:
         raise ValueError(f"Invalid numeric string format: '{value}'") from e
 
 
-def parse_duration_ms(value: str, verbose: int = 0) -> int:
+def parse_duration_ms(value: str, verbosity: int = 0) -> int:
     """Converts shorthand duration strings into milliseconds (int only).
 
     Supported units (case-insensitive):
@@ -79,7 +75,7 @@ def parse_duration_ms(value: str, verbose: int = 0) -> int:
 
     Args:
         value: String representing a duration (e.g. "1s", "30m", "2h", "5000")
-        verbose: Verbosity of logs, default=0 (no logs)
+        verbosity: Verbosity of logs, default=0 (no logs)
 
     Returns:
         The duration in milliseconds as an int
@@ -90,17 +86,18 @@ def parse_duration_ms(value: str, verbose: int = 0) -> int:
     if not isinstance(value, str):
         raise ValueError(f"Expected str, got {type(value).__name__}")
 
+    func = f"{get_func_name_with_sys(StackDump.CALLER, verbosity)}"
     original = value
     # Clean: strip whitespace + remove underscores
     cleaned = re.sub(r"[\s_]+", "", value).strip().lower()
 
-    if verbose>2:
-        print(f"{' '*verbose}: value=[{value}], cleaned=[{cleaned}]")
+    if verbosity>2:
+        print(f"{func}{' '*verbosity}: value=[{value}], cleaned=[{cleaned}]")
     if not cleaned:
         raise ValueError("Empty or whitespace-only string")
 
-    if verbose >= 1:
-        print(f"[parse_duration_ms] original={original!r} → cleaned={cleaned!r}")
+    if verbosity >= 1:
+        print(f"{func} original={original!r} → cleaned={cleaned!r}")
 
     # Match: optional sign, digits, optional unit (s/m/h)
     match = re.fullmatch(r"(-?\d+)([smh])?", cleaned)
@@ -119,7 +116,7 @@ def parse_duration_ms(value: str, verbose: int = 0) -> int:
 
     result = number * multipliers[unit]
 
-    if verbose >= 1:
-        print(f"[parse_duration_ms] {number}{unit or ''} → {result} ms")
+    if verbosity >= 1:
+        print(f"{func}{number}{unit or ''} → {result} ms")
 
     return result
