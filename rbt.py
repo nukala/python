@@ -13,6 +13,7 @@ from md5 import Md5
 
 # /// script
 # dependencies = [
+#    "multipledispatch",
 #    "psutil",
 #    "send2trash",
 #    "typer",

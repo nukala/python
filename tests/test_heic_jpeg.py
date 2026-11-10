@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch, MagicMock
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
-from heic_jpg import HeicJpeg
+#from heic_jpg import HeicJpeg
 
 
 class TestGetOutputDir:

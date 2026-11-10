@@ -73,16 +73,18 @@ def parse_date(s: str, default: date = date.today(), verbosity: int = 0,) -> dat
     for fmt in formats:
         try:
             dt:date = datetime.strptime(s, fmt).date()
-            if verbosity>0:
-                print(f"{func}: s={s}, fmt={fmt}, parsed={dt}")
+            if verbosity>2:
+                print(f"{func} s={s}, fmt={fmt}, parsed={dt}", flush=True)
             return dt
         except ValueError as ve:
             failures.append(fmt)
             continue
 
     if verbosity>0:
-        typer.secho(f"{func}: could not parse '{s}', tried_formats=[{", ".join(failures)}]" 
-                    + f" → returning {default}", fg=typer.colors.RED)
+      msg:str = f"{func} could not parse '{s}', tried_formats=[{", ".join(failures)}] → returning {default}"
+      #typer.secho(f"{msg}", fg=typer.colors.RED, flush=True)
+      print(f"{msg}", flush=True)
+
     return default
 
 # TEST: wknum; wknum -w 50 -d 2; wknum -a 1; wknum -s 1; wknum -of 26/04/15

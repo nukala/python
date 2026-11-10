@@ -26,6 +26,7 @@ import time
 
 # /// script
 # dependencies = [
+#    "multipledispatch",
 #    "typer",
 #    "pyperclip",
 # ]

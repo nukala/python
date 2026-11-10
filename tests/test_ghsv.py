@@ -34,18 +34,27 @@ def test_run_shell_command_with_log(tmp_path):
 
 @pytest.fixture
 def temp_git_repo():
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        os.chdir(tmp_dir)
-        run_shell_command("git init")
-        with open("file1.txt", "w") as f:
-            f.write("content")
-        with open(".hidden.txt", "w") as f:
-            f.write("hidden")
-        run_shell_command("git add file1.txt")
-        run_shell_command("git commit -m 'Initial commit'")
-        with open("file2.txt", "w") as f:
-            f.write("uncommitted")
-        yield tmp_dir
+    # to allow cleanup in the end!
+    old_pwd = os.getcwd()
+    # use try-finally to allow for cleanup after cd-back!
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_dir:
+            os.chdir(tmp_dir)
+            run_shell_command("git init")
+            with open("file1.txt", "w") as f:
+                f.write("content")
+            with open(".hidden.txt", "w") as f:
+                f.write("hidden")
+            run_shell_command("git add file1.txt")
+            run_shell_command("git commit -m 'Initial commit'")
+            with open("file2.txt", "w") as f:
+                f.write("uncommitted")
+            yield tmp_dir
+    finally:
+        # 3. CRITICAL: Move Python out of the temp directory
+        # so Windows allows the folder to be deleted.
+        os.chdir(old_pwd)
+    
 
 def test_get_uncommitted_files(temp_git_repo):
     files = get_uncommitted_files(temp_git_repo)

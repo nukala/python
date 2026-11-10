@@ -20,7 +20,8 @@ tst: tests
 test: tests
 tests::
 #${PYTHON} -m unittest tests/test_*.py
-	${PYTHON} -m unittest $(fd -tf -epy test_ tests)
+#	${PYTHON} -m unittest $(fd -tf -epy test_ tests)
+	uv run pytest tests/test*py
 
 ## pip25 requires local installation?
 venv: requirements.txt
