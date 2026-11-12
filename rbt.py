@@ -54,7 +54,7 @@ class Rbt:
       # parsed = sz + " ".join(parsed.split(' ')[1:])
 
       msum = Md5().process_inline(fn, verbosity)
-      print(f"{msum}  {format_ls_name(fn, use_absolute=False)}")
+      print(f"{msum}  {format_ls_name(fn, use_absolute=False, fmt_file_size=True)}")
 
     def __init__(self):
       self.mtag = GetMtag().to_string()
