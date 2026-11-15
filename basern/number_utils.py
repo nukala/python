@@ -40,6 +40,7 @@ def parse_numeric_string(value: str, desc:str = "", verbosity:int=0) -> float:
     }
 
     last_char = cleaned[-1]
+    # needs multiplier
     if last_char in suffixes:
         multiplier = suffixes[last_char]
         number_part = cleaned[:-1].strip()
@@ -48,12 +49,13 @@ def parse_numeric_string(value: str, desc:str = "", verbosity:int=0) -> float:
         try:
             ret:float = float(number_part) * multiplier
             if verbosity>1:
-                print(f"{func} value={value}, mult={multiplier}, ret={ret}")
+                print(f"{func} value={value}, mult={multiplier:,.0f}, ret={ret:,.2f}")
             return ret
         except ValueError as e:
             raise ValueError(f"Could not parse numeric part of string: '{value}'") from e
 
     try:
+        # plain number
         ret:float = float(cleaned)
         if verbosity>1:
             print(f"{func} value={value}, ret={ret:,.2f}")
