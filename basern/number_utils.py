@@ -26,7 +26,7 @@ def parse_numeric_string(value: str, desc:str = "", verbosity:int=0) -> float:
     if not isinstance(value, str):
         raise TypeError(f"Input must be a string")
     if not value or not value.strip():
-        return 0.0
+        raise ValueError(f"invalid string input {value!r}")
 
     cleaned = re.sub(r'[$,_]', '', value).strip().lower()
     # if verbosity>3:

@@ -1,3 +1,4 @@
+import math
 import typer
 
 from basern.number_utils import parse_numeric_string
@@ -32,6 +33,11 @@ app = typer.Typer(
 # Include clear method docstrings, type hints, tests/examples, and explain tax treatment and limitations.
 
 
+_SSA_THRESHOLDS: dict[str, tuple[float, float]] = {
+    "single": (25_000.0, 34_000.0),
+    "mfj": (32_000.0, 44_000.0),
+}
+
 class TaxCalculator:
     @dataclass
     class TaxCalcCfg:
@@ -48,15 +54,17 @@ class TaxCalculator:
         short_term_cg: float = 0.0
         long_term_cg: float = 0.0
         rental_net: float = 0.0
+        ssa_income: float = 0.0
         retirement_dist: float = 0.0
         pretax_contributions: float = 0.0
 
-        pension: float = 0.0
-        ira_withdrawals: float = 0.0
-        rental_income: float = 0.0
-        business_income: float = 0.0
-        unemployment: float = 0.0
-        other_taxable_income: float = 0.0
+        # pension: float = 0.0
+        # ira_withdrawals: float = 0.0
+        # rental_income: float = 0.0
+        # business_income: float = 0.0
+        # unemployment: float = 0.0
+        # other_taxable_income: float = 0.0
+
 
         def dump_config(self, message: str = "") -> str:
             msg_str = (
@@ -69,7 +77,7 @@ class TaxCalculator:
                 f"{msg_str}DUMP: salary={self.salary:,.2f}, bonus={self.bonus:,.2f}"
                 + f", taxable_interest={self.taxable_interest:,.2f}"
                 + f", short_term_cg={self.short_term_cg:,.2f}, business_income={self.business_income:,.2f}"
-                + f", rental_net={self.rental_net:,.2f}"
+                + f", rental_net={self.rental_net:,.2f}, ssa={self.ssa_income:,.2f}"
                 + f", retirement_dist={self.retirement_dist:,.2f}, long_term_cg={self.long_term_cg:,.2f}"
                 + f", pretax_contribs={self.pretax_contributions:,.2f}, qualified_dividends={self.qualified_dividends:,.2f}"
             )
@@ -151,26 +159,16 @@ class TaxCalculator:
         try:
             # Convert all incoming strings to real floats
             cfg.salary = parse_numeric_string(salary_str, "salary", verbosity)
-            cfg.social_security = parse_numeric_string(
-                social_security_str, "ssa", verbosity
-            )
+            cfg.social_security = parse_numeric_string(social_security_str, "ssa", verbosity)
             cfg.bonus = parse_numeric_string(bonus_str, "bonus", verbosity)
             cfg.taxable_interest = parse_numeric_string(interest_str, "int", verbosity)
             cfg.short_term_cg = parse_numeric_string(stcg_str, "stcg", verbosity)
             cfg.business_income = parse_numeric_string(business_str, "biz", verbosity)
             cfg.rental_net = parse_numeric_string(rental_str, "rntl", verbosity)
-            cfg.retirement_dist = parse_numeric_string(
-                retirement_str, "retr-dist", verbosity
-            )
-            cfg.long_term_cg = parse_numeric_string(
-                ltcg_str, "ltcg", verbosity
-            )
-            cfg.pretax_contributions = parse_numeric_string(
-                pretax_str, "pretax", verbosity
-            )
-            cfg.qualified_dividends = parse_numeric_string(
-                qualdv_str, "qual-divs", verbosity
-            )
+            cfg.retirement_dist = parse_numeric_string(retirement_str, "retr-dist", verbosity)
+            cfg.long_term_cg = parse_numeric_string(ltcg_str, "ltcg", verbosity)
+            cfg.pretax_contributions = parse_numeric_string(pretax_str, "pretax", verbosity)
+            cfg.qualified_dividends = parse_numeric_string(qualdv_str, "qual-divs", verbosity)
 
             if verbosity > 0:
                 print(f" {cfg.dump_config('after-initing')}")
@@ -180,6 +178,7 @@ class TaxCalculator:
             )
             raise typer.Exit(code=1)
 
+        func:str = get_func_name_with_sys(StackDump.CURRENT_METHOD, verbosity)
         # 1. Total Ordinary Income
         ordinary_income = (
             cfg.salary
@@ -190,6 +189,9 @@ class TaxCalculator:
             + cfg.rental_net
             + cfg.retirement_dist
         )
+        taxable_ssa_income:float = TaxCalculator.get_taxable_ssa_income(cfg.ssa_income, ordinary_income, 
+                                                                verbosity=cfg.verbosity)
+        ordinary_income += taxable_ssa_income
 
         # if ordinary_income <= 0:
         #     if verbosity>=1:
@@ -197,35 +199,39 @@ class TaxCalculator:
         #     return
 
         # 2. Adjusted Gross Income (AGI)
-        federal_agi = (
-            ordinary_income + cfg.long_term_cg + cfg.qualified_dividends
-        ) - cfg.pretax_contributions
+        fed_taxable_ltcg = max(0.0, cfg.long_term_cg + cfg.qualified_dividends)
+        federal_agi = (ordinary_income + fed_taxable_ltcg) - cfg.pretax_contributions
 
         # 3. Deductions (Using Projected 2026 Standard Deductions for MFJ)
         fed_standard_deduction = 32200.0
         ca_standard_deduction = 10804.0  # Estimated 2026 CA standard deduction for MFJ
 
-        fed_taxable_ordinary = max(
-            0.0, ordinary_income - cfg.pretax_contributions - fed_standard_deduction
-        )
-        fed_taxable_ltcg = max(0.0, cfg.long_term_cg + cfg.qualified_dividends)
-
+        fed_taxable_ordinary = max(0.0, federal_agi - fed_standard_deduction)
+        fed_taxable = max(0.0, (federal_agi + fed_taxable_ltcg))
         ca_taxable = max(
             0.0,
-            (ordinary_income + cfg.long_term_cg + cfg.qualified_dividends)
+            federal_agi
+            # NO CA Tax! www.ftb.ca.gov/file/personal/income-types/social-security.html
+            + taxable_ssa_income 
             - cfg.pretax_contributions
             - ca_standard_deduction,
         )
+        if verbosity>0:
+            print(f" {func} fed_agi={federal_agi}, ssa_inc={taxable_ssa_income},"
+                  f" pretax=-{cfg.pretax_contributions}, ca_std={ca_standard_deduction}")
 
         fed_ordinary_tax, fed_ltcg_tax, fed_marginal_rate, fed_marginal_limit = (
             TaxCalculator.fed_taxes(fed_taxable_ordinary, fed_taxable_ltcg)
         )
         total_fed_tax = fed_ordinary_tax + fed_ltcg_tax
+        if verbosity>0:
+            print(f"  {func} fed_taxable={fed_taxable}, marginal_limit={fed_marginal_limit}, agi={federal_agi}")
 
         ca_base_tax, ca_surtax, ca_marginal_rate, ca_marginal_limit = (
             TaxCalculator.ca_taxes(ca_taxable)
         )
         total_ca_tax = ca_base_tax + ca_surtax
+
         # --- Output Summary Generation ---
         if verbosity > 1:
             typer.secho("\n")
@@ -261,14 +267,14 @@ class TaxCalculator:
         fed_tax_rate = (
             0.0
             if ordinary_income <= 0 or fed_taxable_ordinary <= 0
-            else (total_fed_tax * 100.0) / (fed_taxable_ordinary + fed_taxable_ltcg)
+            else (total_fed_tax * 100.0) / (fed_taxable)
         )
         typer.secho(
             f"Total Estimated Federal Tax: ${total_fed_tax:,.2f}"
             f" ({fed_tax_rate:,.2f}%)"
             f" marginal={fed_marginal_rate:,.2f}%"
             # CA taxable includes, income+ltcg+qual
-            f", remaining-bracket=${max(0.0, fed_marginal_limit - ca_taxable):,.0f}",
+            f", remaining-bracket=${max(0.0, fed_marginal_limit - fed_taxable_ordinary):,.0f}",
             bold=True,
         )
 
@@ -325,6 +331,66 @@ class TaxCalculator:
             fg=typer.colors.MAGENTA,
             bold=True,
         )
+
+    @staticmethod
+    def get_taxable_ssa_income(ssa_income: float, fed_ordinary_income: float, verbosity:int = 0,
+                               filing_status: str = 'mfj') -> float:
+        """
+        Taxable portion of Social Security benefits (SSDI / old-age; NOT SSI, which is never taxable).
+
+        Args:
+          ssa_income: Total income from social security (disability and old-age)
+          fed_ordinary_income: Ordinary income from all sources + tax-exempt-interest + other-income (rental,biz,retirement)
+          verbosity: for debugging details
+        
+        Returns:
+          Taxable SSA income for federal purposes
+
+        Raises:
+          ValueError if not finite or None or <0 for ssa_income and fed_ordinary_income
+          TypeError as appropriate
+        """
+        func:str = get_func_name_with_sys(StackDump.CURRENT_METHOD, verbosity)
+        # !r to show representation - 'mfj ' or so
+        if filing_status not in _SSA_THRESHOLDS:
+            raise ValueError(f"unknown filing_status={filing_status!r}")
+
+        if type(ssa_income) is not float:
+            raise ValueError(f"ssa_income=[{ssa_income!r}] is not a float")
+        if not ssa_income:
+            return 0
+        if not math.isfinite(ssa_income):
+            raise ValueError(f"ssa_income must be finite, got {ssa_income!r}")
+        if ssa_income < 0:
+            raise ValueError(f"ssa_income={ssa_income!r} too low!")
+
+        if not math.isfinite(fed_ordinary_income):
+            raise ValueError(f"fed_ordinary_income must be finite, got {fed_ordinary_income!r}")      
+        if fed_ordinary_income is None:
+            raise ValueError("fed_ordinary_income must not be None")
+
+        base1, base2 = _SSA_THRESHOLDS['mfj']
+        provisional: float = (fed_ordinary_income or 0.0) + 0.5 * ssa_income
+
+        if provisional <= base1:
+            taxable = 0.0
+        elif provisional <= base2:
+            taxable = 0.5 * (provisional - base1)
+        else:
+            lhs: float = 0.5 * ssa_income
+            rhs: float = 0.5 * (base2 - base1)
+            smallest: float = min(lhs, rhs)
+            if verbosity>0:
+                print(f"{func} lhs={lhs}, rhs={rhs}, smallest={smallest}", flush=True)
+            taxable = 0.85 * (provisional - base2) + smallest
+
+        taxable = max(0.0, min(taxable, 0.85 * ssa_income))
+        if verbosity > 0:
+            print(f"{func} ssa_income={ssa_income}, provisional={provisional:,.2f} "
+                f"thresholds=({base1:,.0f},{base2:,.0f}) "
+                f"taxable={taxable:,.2f}", flush=True)
+        return taxable
+
 
     @staticmethod
     def fed_taxes(
