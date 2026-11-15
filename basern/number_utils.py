@@ -122,3 +122,8 @@ def parse_duration_ms(value: str, verbosity: int = 0) -> int:
         print(f"{func}{number}{unit or ''} → {result} ms")
 
     return result
+
+
+    ### WIP - validateFloat
+    def validateFloat(value:float, msg:str = "", min:float = 0.0, verbosity:int = 0) -> float:
+        raise TypeError("Type the code and move tests from tax-calc -> num_utils")

@@ -70,6 +70,29 @@ class TestParseNumericString:
             ("0k", 0.0),
             # ("$0", 0.0),
             ("0.0M", 0.0),
+
+            #### copied from yet-another-test, may have dups
+            # Lowercase Suffixes
+            ("10k", 10000.0),
+            ("1.5m", 1500000.0),
+            ("3b", 3000000000.0),
+            
+            # Uppercase Suffixes (Case Insensitivity Verification)
+            ("10K", 10000.0),
+            ("1.5M", 1500000.0),
+            ("3B", 3000000000.0),
+            
+            # Casing combined with trailing spaces
+            ("10 k ", 10000.0),
+            ("10 K ", 10000.0),
+            (" 1.5 M", 1500000.0),
+            
+            # Casing combined with currency formatting and underscores
+            ("$10_000K", 10000000.0),
+            ("$10_000k", 10000000.0),
+            ("$-5.5M", -5500000.0),
+            ("$-5.5m", -5500000.0),
+            #### copied from yet-another-test, may have dups
         ],
     )
     def test_valid_conversions(self, value: str, expected: float):
@@ -188,6 +211,32 @@ class TestParseNumericString:
     def test_default_verbosity_is_zero(self):
         # Just ensure the default parameter works (no exception)
         assert parse_numeric_string("10") == 10.0
+
+        # --- FAILURE CASES ---
+
+    @pytest.mark.parametrize(
+        "invalid_input",
+        [
+            "",                 # Empty string
+            "   ",              # Whitespace only
+            "abc",              # Letters only
+            "K",                # Upper suffix with no numeric base
+            "k",                # Lower suffix with no numeric base
+            "10kM",             # Multiple nested suffixes
+            "1.2.3",            # Broken decimal formatting
+        ],
+    )
+    def test_parse_numeric_string_exceptions(self, invalid_input):
+        """Verifies invalid or broken strings throw clean ValueError exceptions."""
+        with pytest.raises(ValueError):
+            parse_numeric_string(invalid_input)
+
+
+    def test_parse_numeric_string_none_type(self):
+        """Confirms strong type checking limits work accurately against non-string elements."""
+        with pytest.raises(TypeError):
+            parse_numeric_string(None)  # type: ignore
+
 
 # ===========================================================================
 # parse_duration_ms
