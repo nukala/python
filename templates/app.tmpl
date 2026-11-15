@@ -63,7 +63,20 @@ class Klass:
     kk: Klass = Klass()
     kk.biz_logic(cfg, ctx.args)
 
-  def bix_logic(self, cfg: Klass.KlassCfg, args: list[str] = None):
+  def biz_logic(self, cfg: Klass.KlassCfg, args: list[str] = None) -> None:
+    """
+    Implements business logic for this Klass
+
+    Args:
+      cfg: 
+      args:
+
+    Returns:
+      None:
+
+    Raises:
+      ValueError: 
+    """
     print(f"{cfg.dump(f"args={args}")}")
     # comment or delete 2 lines
     typer.secho("WIP see source", fg=typer.colors.RED, bg=typer.colors.WHITE, bold=True)
